@@ -1,0 +1,24 @@
+{% extends "library/layout.html" %}
+
+{% block body %}
+    <h1>Books</h1>
+    <ul>
+        {% for book in books %}
+            <li>
+                Book ({{ book.0 }}): {{ book.1 }} - {{ book.2 }}
+                {% if book.2 == "AVAILABLE" %}
+                    <a href="{% url 'borrow' book.0 %}">BORROW</a>
+                {% elif book.2 == "BORROWED" %}
+                    <a href="{% url 'reserve' book.0 %}">RESERVE</a>
+                {% else %}
+                    UNAVAILABLE
+                {% endif %}
+                <a href="{% url 'reset' book.0 %}">RESET (delete later)</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <form action="{% url 'search' %}" method="get">
+        <input class="search" type="text" name="q" placeholder="Search Books">
+    </form>
+{% endblock %}
