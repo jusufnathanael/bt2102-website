@@ -5,7 +5,8 @@
     <ul>
         {% for book in books %}
             <li>
-                Book ({{ book.0 }}): {{ book.1 }} - {{ book.2 }}
+                <a href="{% url 'details' book.0 %}">Book</a>
+                ({{ book.0 }}): {{ book.1 }} - {{ book.2 }}
                 {% if book.2 == "AVAILABLE" %}
                     <a href="{% url 'borrow' book.0 %}">BORROW</a>
                 {% elif book.2 == "BORROWED" %}
@@ -13,7 +14,7 @@
                 {% else %}
                     UNAVAILABLE
                 {% endif %}
-                <a href="{% url 'reset' book.0 %}">RESET (delete later)</a>
+                <a href="{% url 'restore' book.0 %}">RETURN BOOK</a>
             </li>
         {% endfor %}
     </ul>
