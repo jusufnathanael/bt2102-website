@@ -6,9 +6,15 @@ from datetime import date
 from . models import Book, MemberUserForm, Memberuser
 
 # Create your views here.
-def index(request):
+def checkEmptySession(request):
     if "userid" not in request.session:
         request.session["userid"] = []
+
+def index(request):
+    checkEmptySession(request)
+    # if not logged in yet
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
     q = "SELECT * FROM BOOK"
     c.execute(q)
@@ -86,39 +92,72 @@ def reserved(request):
 
 
 def register(request):
-    if request.method == "POST":
-        c = connection.cursor()
-        value = (request.POST["userid"], request.POST["password"])
-        q = f"INSERT INTO MEMBERUSER VALUES {value}"
-        c.execute(q)
-        request.session["userid"] = [request.POST["userid"]]
-        return HttpResponseRedirect(reverse("index"))
-    return render(request, "library/register.html")
-
-def login(request):
-    print(request.session["userid"])
+    checkEmptySession(request)
+    # if logged in
     if request.session["userid"]:
         return HttpResponseRedirect(reverse("index"))
-    if request.method == "POST" and not request.session["userid"]:
+    if request.method == "POST":
+        # get current userid and password
         userid = request.POST["userid"]
         password = request.POST["password"]
+        # get all userids from the database
         c = connection.cursor()
         q = f"SELECT USERID FROM MEMBERUSER"
         c.execute(q)
         userids = c.fetchall()
+        # if registration is successfull
+        if (userid,) not in userids and userid and password:
+            value = (userid, password)
+            q = f"INSERT INTO MEMBERUSER VALUES {value}"
+            c.execute(q)
+            request.session["userid"] = [userid]
+            return HttpResponseRedirect(reverse("index"))
+        # if userid already existed
+        else:
+            # if either userid or password (or both) is blank
+            if not userid or not password:
+                message = "Please insert user ID and password."
+            # if userid existed
+            elif (userid,) in userids:
+                message = "User ID existed."
+            return render(request, "library/register.html", {
+                "message": message
+            })
+    # render empty registration page
+    return render(request, "library/register.html")
+
+def login(request):
+    checkEmptySession(request)
+    # if logged in
+    if request.session["userid"]:
+        return HttpResponseRedirect(reverse("index"))
+    if request.method == "POST" and not request.session["userid"]:
+        # get current userid and password
+        userid = request.POST["userid"]
+        password = request.POST["password"]
+        # get all userids from the database
+        c = connection.cursor()
+        q = f"SELECT USERID FROM MEMBERUSER"
+        c.execute(q)
+        userids = c.fetchall()
+        # get all passwords from the database
         q = f"SELECT PASSWORD FROM MEMBERUSER"
         c.execute(q)
         passwords = c.fetchall()
+        # if userid and password are correct
         if ((userid,) in userids) and ((password,) in passwords):
             request.session["userid"] = [userid]
             return HttpResponseRedirect(reverse("index"))
         else:
+            # if userid exist but no password
             if ((userid,) in userids) and (password is None):
                 message = "Please input the password."
                 id = userid
+            # if userid exist but incorrect password
             elif ((userid,) in userids) and ((password,) not in passwords):
                 message = "Incorrect password."
                 id = userid
+            # if userid does not exist
             elif (userid,) not in userids:
                 message = "User ID does not exist."
                 id = ''
@@ -126,9 +165,10 @@ def login(request):
                 "message": message,
                 "id": id
             })
+    # render empty login page
     return render(request, "library/login.html")
 
 def logout(request):
-    print(request.session["userid"])
+    # clear userid from session
     request.session["userid"] = []
     return HttpResponseRedirect(reverse("login"))

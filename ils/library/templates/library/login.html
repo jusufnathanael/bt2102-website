@@ -1,10 +1,18 @@
-LOGIN
-{{ message }}
-<form method="POST" action="{% url 'login' %}">
-    {% csrf_token %}
-    <p>Userid:</p>
-    <input type="text" name="userid" value="{{id}}">
-    <p>Password:</p>
-    <input type="password" name="password">
-    <input type="submit" value="login">
-</form>
+{% extends "library/layout.html" %}
+
+{% block body %}
+
+    LOGIN
+    {{ message }}
+    <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+        <p>Userid:</p>
+        <input type="text" name="userid" value="{{id}}">
+        <p>Password:</p>
+        <input type="password" name="password">
+        <input type="submit" value="login">
+    </form>
+
+    <a href="{% url 'register' %}">Register</a>
+
+{% endblock %}

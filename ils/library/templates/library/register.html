@@ -1,9 +1,21 @@
-REGISTER
-<form method="POST" action="{% url 'register' %}">
-    {% csrf_token %}
-    <p>Userid:</p>
-    <input type="text" name="userid">
-    <p>Password:</p>
-    <input type="password" name="password">
-    <input type="submit" value="register">
-</form>
+{% extends "library/layout.html" %}
+
+{% block body %}
+
+    REGISTER
+    {{ message }}
+    <form method="POST" action="{% url 'register' %}">
+        {% csrf_token %}
+        <p>Userid:</p>
+        <input type="text" name="userid">
+        <p>Password:</p>
+        <input type="password" name="password">
+        <input type="submit" value="register">
+    </form>
+
+    <a href="{% url 'login' %}">Log in</a>
+
+{% endblock %}
+
+
+
