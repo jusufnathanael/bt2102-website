@@ -5,22 +5,28 @@ from datetime import date
 
 from . models import Book, MemberUserForm, Memberuser
 
-# Create your views here.
+# TODO: add checkEmptySession() to all the functions below
+
 def checkEmptySession(request):
     if "userid" not in request.session:
         request.session["userid"] = []
+        request.session["message"] = []
 
 def index(request):
     checkEmptySession(request)
-    # if not logged in yet
     if not request.session["userid"]:
         return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
     q = "SELECT * FROM BOOK"
     c.execute(q)
     results = c.fetchall()
+    message = ""
+    if request.session["message"]:
+        message = request.session["message"]
+        request.session["message"] = []
     return render(request, "library/index.html", {
-        "books": results
+        "books": results,
+        "message": message
     })
 
 def details(request, bookid):
@@ -34,14 +40,25 @@ def details(request, bookid):
 
 def borrow(request, bookid):
     c = connection.cursor()
-    q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
+    # select current book
+    q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
-    '''
-    value = (bookid, 'Aldo', date.today().strftime("%Y-%m-%d"), 'BORROWED', 0)
-    q = f"INSERT INTO BORROWS VALUES {value}"
-    c.execute(q)
-    '''
+    book = c.fetchone()
+    status = list(book)[2]
+    if status == "AVAILABLE":
+        # insert into the record and update the book status
+        value = (bookid, request.session["userid"][0], date.today().strftime("%Y-%m-%d"), 'BORROWED', 0)
+        q = f"INSERT INTO BORROWS VALUES {value}"
+        c.execute(q)
+        q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
+        c.execute(q)
+        message = "You have successfully borrowed the book."
+    else:
+        message = "Book is unavailable."
+    # return to index
+    request.session["message"] = message
     return HttpResponseRedirect(reverse("index"))
+
 
 def reserve(request, bookid):
     c = connection.cursor()
@@ -90,6 +107,9 @@ def reserved(request):
         "books": results
     })
 
+
+
+# USER AUTHENTICATION
 
 def register(request):
     checkEmptySession(request)
