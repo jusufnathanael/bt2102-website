@@ -1,0 +1,9 @@
+REGISTER
+<form method="POST" action="{% url 'register' %}">
+    {% csrf_token %}
+    <p>Userid:</p>
+    <input type="text" name="userid">
+    <p>Password:</p>
+    <input type="password" name="password">
+    <input type="submit" value="register">
+</form>

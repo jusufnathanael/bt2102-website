@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # MAIN FUNCTIONALITY
     path("", views.index, name="index"),
     path("books/<int:bookid>", views.details, name="details"),
     path("borrow/<int:bookid>", views.borrow, name="borrow"),
@@ -14,7 +15,7 @@ urlpatterns = [
     path("books/reserved", views.reserved, name="reserved"),
     
     # USER AUTHENTICATION
-    # path("register", views.register, name="register"),
-    # path("login", views.login, name="login"),
-    # path("logout", views.logout, name="logout"),
+    path("register", views.register, name="register"),
+    path("login", views.login, name="login"),
+    path("logout", views.logout, name="logout"),
 ]
