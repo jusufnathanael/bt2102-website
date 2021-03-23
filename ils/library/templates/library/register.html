@@ -3,11 +3,21 @@
 {% block body %}
 
     REGISTER
-    {{ message }}
+    
+    <ul>
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+
     <form method="POST" action="{% url 'register' %}">
         {% csrf_token %}
-        <p>Userid:</p>
-        <input type="text" name="userid">
+        <p>Name:</p>
+        <input type="text" name="name" value="{{ name }}">
+        <p>User ID:</p>
+        <input type="text" name="userid" value="{{ userid }}">
+        <p>Email:</p>
+        <input type="text" name="email" value="{{ email }}">
         <p>Password:</p>
         <input type="password" name="password">
         <input type="submit" value="register">

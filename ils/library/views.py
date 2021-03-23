@@ -1,19 +1,19 @@
 from django.http.response import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render, reverse
 from django.db import connection
-from datetime import date
+from datetime import date, timedelta
 
-from . models import Book, MemberUserForm, Memberuser
+from . models import Book, Memberuser
 
-# TODO: add checkEmptySession() to all the functions below
+# TODO: add initialiseEmptyUserID() to all the functions below
 
-def checkEmptySession(request):
+def initialiseEmptyUserID(request):
     if "userid" not in request.session:
         request.session["userid"] = []
         request.session["message"] = []
 
 def index(request):
-    checkEmptySession(request)
+    initialiseEmptyUserID(request)
     if not request.session["userid"]:
         return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
@@ -39,15 +39,22 @@ def details(request, bookid):
     })
 
 def borrow(request, bookid):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
     # select current book
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     book = c.fetchone()
-    status = list(book)[2]
-    if status == "AVAILABLE":
+    # if book does not exist
+    if not book:
+        message = "Book does not exist."
+    # if book is available
+    elif list(book)[2] == 'AVAILABLE':
         # insert into the record and update the book status
-        value = (bookid, request.session["userid"][0], date.today().strftime("%Y-%m-%d"), 'BORROWED', 0)
+        duedate = date.today() + timedelta(days=27)
+        value = (bookid, request.session["userid"][0], duedate.strftime("%Y-%m-%d"), 0)
         q = f"INSERT INTO BORROWS VALUES {value}"
         c.execute(q)
         q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
@@ -60,7 +67,14 @@ def borrow(request, bookid):
     return HttpResponseRedirect(reverse("index"))
 
 
+def extend(request, bookid):
+    return HttpResponse("")
+
+
 def reserve(request, bookid):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
     q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
     c.execute(q)
@@ -69,14 +83,58 @@ def reserve(request, bookid):
     results = c.fetchall()
     return HttpResponseRedirect(reverse("index"))
 
+
 def restore(request, bookid):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
+    # select current book
     c = connection.cursor()
+    q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
+    c.execute(q)
+    book = c.fetchone()
+    # if book does not exist
+    if not book:
+        request.session["message"] = "Book does not exist."
+        return HttpResponseRedirect(reverse("index"))
+    # select userid and bookid from borrows
+    userid = request.session["userid"][0]
+    q = f"SELECT * FROM BORROWS WHERE USERID = '{userid}' AND BOOKID = {bookid}"
+    c.execute(q)
+    borrowRecord = c.fetchone()
+    # if the user is not borrowing the book
+    if not borrowRecord:
+        request.session["message"] = f"You are not borrowing the book {book[1]}."
+        return HttpResponseRedirect(reverse("index"))
+    # check for fines
+    bookid, userid, duedate, extension = borrowRecord
+    # if the user needs to pay for fine
+    if date.today() > duedate:
+        fine = (date.today() - duedate)
+        return render(request, "library/payment.html", {
+            "fine": fine
+        })
+    # book returned successfully
     q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
     c.execute(q)
-    q = "SELECT * FROM BOOK"
+    q = f"DELETE FROM BORROWS WHERE USERID = '{userid}' and BOOKID = {bookid}"
     c.execute(q)
-    results = c.fetchall()
+    # check for any book reservation
+    q = f"SELECT BOOKID FROM RESERVES WHERE BOOKID = {bookid}"
+    c.execute(q)
+    result = c.fetchone()
+    if result:
+        duedate = date.today() + timedelta(days=13)
+        d = duedate.strftime("%Y-%m-%d")
+        q = f"UPDATE RESERVES SET DUEDATE = '{d}' WHERE BOOKID = {bookid}"
+        c.execute(q)
+        q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
+        c.execute(q)
+    else:
+        q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
+        c.execute(q)
     return HttpResponseRedirect(reverse("index"))
+
 
 def search(request):
     title = request.GET["q"]
@@ -112,42 +170,79 @@ def reserved(request):
 # USER AUTHENTICATION
 
 def register(request):
-    checkEmptySession(request)
-    # if logged in
-    if request.session["userid"]:
-        return HttpResponseRedirect(reverse("index"))
-    if request.method == "POST":
-        # get current userid and password
-        userid = request.POST["userid"]
-        password = request.POST["password"]
-        # get all userids from the database
+
+    def isValid(userid, name, email, password):
+        # get all userids and emails from the database
         c = connection.cursor()
         q = f"SELECT USERID FROM MEMBERUSER"
         c.execute(q)
         userids = c.fetchall()
-        # if registration is successfull
-        if (userid,) not in userids and userid and password:
-            value = (userid, password)
+        q = f"SELECT EMAIL FROM MEMBERUSER"
+        c.execute(q)
+        emails = c.fetchall()
+        # values must be non-NULL and (userid, email) needs to be unique
+        if (userid,) not in userids and (email,) not in emails and userid and name and email and password:
+            return True
+        return False
+    
+    def getInvalidMessages(userid, name, email, password):
+        # get all userids and emails from the database
+        c = connection.cursor()
+        q = f"SELECT USERID FROM MEMBERUSER"
+        c.execute(q)
+        userids = c.fetchall()
+        q = f"SELECT EMAIL FROM MEMBERUSER"
+        c.execute(q)
+        emails = c.fetchall()
+        messages = []
+        # values must be non-NULL
+        if not name:
+            messages += ["Please insert your name."]
+        if not userid:
+            messages += ["Please insert a user ID."]
+        if not email:
+            messages += ["Please insert an email."]
+        if not password:
+            messages += ["Please input a password."]
+        # userid and email must be unique
+        if (userid,) in userids:
+            messages += ["This User ID has been registered."]
+            userid = ""
+        if (email,) in emails:
+            messages += ["This email address has been registered."]
+            email = ""
+        return (messages, userid, email)
+
+    initialiseEmptyUserID(request)
+    # if logged in
+    if request.session["userid"]:
+        return HttpResponseRedirect(reverse("index"))
+    if request.method == "POST":
+        # get current userid, name, email, and password
+        userid = request.POST["userid"]
+        name = request.POST["name"]
+        email = request.POST["email"]
+        password = request.POST["password"]
+        # if the registration is successfull
+        if isValid(userid, name, email, password):
+            c = connection.cursor()
+            value = (userid, name, email, password)
             q = f"INSERT INTO MEMBERUSER VALUES {value}"
             c.execute(q)
             request.session["userid"] = [userid]
+            request.session["message"] = "You have successfully registered."
             return HttpResponseRedirect(reverse("index"))
-        # if userid already existed
-        else:
-            # if either userid or password (or both) is blank
-            if not userid or not password:
-                message = "Please insert user ID and password."
-            # if userid existed
-            elif (userid,) in userids:
-                message = "User ID existed."
-            return render(request, "library/register.html", {
-                "message": message
-            })
+        # if registration fails
+        messages, userid, email = getInvalidMessages(userid, name, email, password)
+        return render(request, "library/register.html", {
+            "messages": messages, "name": name, "userid": userid, "email": email
+        })
     # render empty registration page
     return render(request, "library/register.html")
 
+
 def login(request):
-    checkEmptySession(request)
+    initialiseEmptyUserID(request)
     # if logged in
     if request.session["userid"]:
         return HttpResponseRedirect(reverse("index"))
