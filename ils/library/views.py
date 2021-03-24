@@ -3,8 +3,6 @@ from django.shortcuts import redirect, render, reverse
 from django.db import connection
 from datetime import date, timedelta
 
-from . models import Book, Memberuser
-
 # TODO: add initialiseEmptyUserID() to all the functions below
 
 def initialiseEmptyUserID(request):
@@ -51,15 +49,23 @@ def borrow(request, bookid):
     if not book:
         message = "Book does not exist."
     # if book is available
-    elif list(book)[2] == 'AVAILABLE':
-        # insert into the record and update the book status
-        duedate = date.today() + timedelta(days=27)
-        value = (bookid, request.session["userid"][0], duedate.strftime("%Y-%m-%d"), 0)
-        q = f"INSERT INTO BORROWS VALUES {value}"
+    elif list(book)[2] == "AVAILABLE":
+        # check if the user has reached the borrowing limit
+        userid = request.session["userid"][0]
+        q = f"SELECT COUNT(*) FROM BORROWS GROUP BY USERID HAVING USERID = '{userid}'"
         c.execute(q)
-        q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
-        c.execute(q)
-        message = "You have successfully borrowed the book."
+        number = c.fetchone()
+        if number and list(number)[0] >= 4:
+            message = "You have reached your borrowing limit (max. 4 books)."
+        else :
+            # insert into the record and update the book status
+            duedate = date.today() + timedelta(days=27)
+            value = (bookid, userid, duedate.strftime("%Y-%m-%d"), 0)
+            q = f"INSERT INTO BORROWS VALUES {value}"
+            c.execute(q)
+            q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
+            c.execute(q)
+            message = "You have successfully borrowed the book."
     else:
         message = "Book is unavailable."
     # return to index
@@ -76,11 +82,36 @@ def reserve(request, bookid):
     if not request.session["userid"]:
         return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
-    q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
+    # select current book
+    q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
-    q = "SELECT * FROM BOOK"
-    c.execute(q)
-    results = c.fetchall()
+    book = c.fetchone()
+    # if book does not exist
+    if not book:
+        message = "Book does not exist."
+    # if the book is being borrowed
+    elif list(book)[2] == "BORROWED":
+        # if the user is borrowing the book
+        q = f"SELECT USERID FROM BORROWS WHERE BOOKID = {bookid}"
+        c.execute(q)
+        borrowUser = c.fetchone()
+        userid = request.session["userid"][0]
+        if (userid,) == borrowUser:
+            message = "You have borrowed this book."
+        # if the reservation is successfull
+        else: 
+            q = f"INSERT INTO RESERVES VALUES ({bookid}, '{userid}', NULL)"
+            c.execute(q)
+            q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
+            c.execute(q)
+            message = "You have succesfully reserved the book."
+    # if the book is available to borrow
+    elif list(book)[2] == "AVAILABLE":
+        message = "Book is available, please go ahead to borrow the book."
+    # if the book is currently reserved
+    elif list(book)[2] == "RESERVED":
+        message = "Book is being reserved, please try again later."
+    request.session["message"] = message
     return HttpResponseRedirect(reverse("index"))
 
 
@@ -110,7 +141,8 @@ def restore(request, bookid):
     bookid, userid, duedate, extension = borrowRecord
     # if the user needs to pay for fine
     if date.today() > duedate:
-        fine = (date.today() - duedate)
+        fine = (date.today() - duedate).days
+        request.session["message"] = f"You need to pay for the fine first."
         return render(request, "library/payment.html", {
             "fine": fine
         })
@@ -133,6 +165,7 @@ def restore(request, bookid):
     else:
         q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
         c.execute(q)
+    request.session["message"] = f"Book returned successfully."
     return HttpResponseRedirect(reverse("index"))
 
 
