@@ -13,6 +13,8 @@
                 {% elif book.2 == "BORROWED" %}
                     <a href="{% url 'reserve' book.0 %}">RESERVE</a>
                     <a href="{% url 'extend' book.0 %}">EXTEND</a>
+                {% elif book.2 == "RESERVED" %}
+                    <a href="{% url 'cancel' book.0 %}">CANCEL</a>
                 {% else %}
                     UNAVAILABLE
                 {% endif %}

@@ -10,6 +10,7 @@ urlpatterns = [
     path("extend/<int:bookid>", views.extend, name="extend"),
     path("reserve/<int:bookid>", views.reserve, name="reserve"),
     path("restore/<int:bookid>", views.restore, name="restore"),
+    path("cancel/<int:bookid>", views.cancel, name="cancel"),
 
     # MEMBER USER
     path("myaccount/borrowings", views.myborrowings, name="myborrowings"),

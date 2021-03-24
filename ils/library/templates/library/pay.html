@@ -1,1 +1,9 @@
 PAYLAH! {{total}}
+
+<form method="POST" action="{% url 'myfees' %}">
+    {% csrf_token %}
+    CREDIT CARD OR DEBIT CARD?<br>
+    ENTER CREDENTIALS!
+    <input type="text" name="test">
+    <input type="submit" name="button" value="success"></input>
+</form>

@@ -65,9 +65,13 @@ def myreservations(request):
         "reserves": reserves
     })
 
+
 def myfees(request):
-    # select records from the database
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
     userid = request.session["userid"][0]
+    # get borrow records
     c = connection.cursor()
     q = f"SELECT BOOKID, USERID, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
         f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0 AND USERID = '{userid}'"
@@ -75,6 +79,10 @@ def myfees(request):
     records = c.fetchall()
     # keep user's selections
     if request.method == "POST":
+        button = request.POST["button"]
+        # if payment is successfull
+        if button == "success":
+            return HttpResponseRedirect(reverse("index"))
         # get selected bookids
         if "bookids" not in request.POST:
             return render(request, "library/payment.html", {
@@ -84,23 +92,22 @@ def myfees(request):
         results = dict(request.POST)["bookids"]
         print(request.POST["button"])
         bookids = [int(i) for i in results]
-        # calculate the sum of fine
+        # calculate total fine
         sum = 0
         for record in list(records):
             if list(record)[0] in bookids:
                 sum += list(record)[3]
-        type = request.POST["button"]
-        # if calculate fees
-        if type == "calculate fees":
+        if button == "calculate fees":
             return render(request, "library/payment.html", {
                 "records": records,
                 "bookids": bookids,
                 "total": sum
             })
-        # if payment
-        return render(request, "library/pay.html", {
-            "total": sum
-        })
+        # if user wants to pay
+        if button == "pay":
+            return render(request, "library/pay.html", {
+                "total": sum
+            })
     return render(request, "library/payment.html", {
         "records": records,
         "total": 0
@@ -222,6 +229,38 @@ def reserve(request, bookid):
     # if the book is currently reserved
     elif list(book)[2] == "RESERVED":
         message = "Book is being reserved, please try again later."
+    request.session["message"] = message
+    return HttpResponseRedirect(reverse("index"))
+
+
+def cancel(request, bookid):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
+    userid = request.session["userid"][0]
+    c = connection.cursor()
+    # select current book
+    q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
+    c.execute(q)
+    book = c.fetchone()
+    # if book does not exist
+    if not book:
+        message = "Book does not exist."
+    # if the user is reserving the book
+    elif list(book)[2] == "RESERVED":
+        # if the user is borrowing the book
+        q = f"SELECT USERID FROM RESERVES WHERE BOOKID = {bookid} AND USERID = '{userid}'"
+        c.execute(q)
+        reserveUser = c.fetchone()
+        if (userid,) == reserveUser:
+            q = f"DELETE FROM RESERVES WHERE BOOKID = {bookid} AND USERID = '{userid}'"
+            c.execute(q)
+            if list(book)[2] == "RESERVED":
+                q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
+                c.execute(q)
+            message = "You have successfully cancel the reservation."
+        else:
+            message = "You have not reserved this book yet."
     request.session["message"] = message
     return HttpResponseRedirect(reverse("index"))
 
