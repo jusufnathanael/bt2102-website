@@ -4,12 +4,12 @@
 
     LOGIN
     
-    {{ message }}
+    {{message}}
 
     <form method="POST" action="{% url 'login' %}">
         {% csrf_token %}
         <p>User ID or email:</p>
-        <input type="text" name="userid" value="{{ id }}">
+        <input type="text" name="userid" value="{{id}}">
         <p>Password:</p>
         <input type="password" name="password">
         <input type="submit" value="login">

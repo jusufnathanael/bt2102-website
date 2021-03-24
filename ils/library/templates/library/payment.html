@@ -1,3 +1,33 @@
+<!DOCTYPE html>
+
 PAYMENT PAGE
 
-${{fine}}
+${{total}}
+<form method="POST" action="{% url 'myfees' %}">
+    {% csrf_token %}
+    <ul>
+        {% for record in records %}
+            <li>
+                {% if record.0 in bookids %}
+                    <input type="checkbox" name="bookids" value="{{record.0}}" checked>
+                {% else %}
+                    <input type="checkbox" name="bookids" value="{{record.0}}">
+                {% endif %}
+                {{record.0}} - {{record.1}} - {{record.2}} - {{record.3}}    
+            </li>
+        {% endfor %}
+    </ul>
+    <input type="submit" name="button" value="calculate fees"></input>
+    <input type="submit" name="button" value="pay"></input>
+</form>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('input[type="checkbox"]').change(function() {
+            var total_checked=  $("input[type='checkbox']:checked").length 
+            $("#d1").html("Total Number of checkbox checked  = " + total_checked );
+        });
+    });
+</script>

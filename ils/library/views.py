@@ -36,6 +36,77 @@ def details(request, bookid):
         "book": result
     })
 
+
+def myborrowings(request):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
+    userid = request.session["userid"][0]
+    # get the borrow records
+    c = connection.cursor()
+    q = f"SELECT * FROM BORROWS WHERE USERID = '{userid}'"
+    c.execute(q)
+    borrows = c.fetchall()
+    return render(request, "library/mybooks.html", {
+        "borrows": borrows
+    })
+
+def myreservations(request):
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
+    userid = request.session["userid"][0]
+    # get the reserve records
+    c = connection.cursor()
+    q = f"SELECT * FROM RESERVES WHERE USERID = '{userid}'"
+    c.execute(q)
+    reserves = c.fetchall()
+    return render(request, "library/mybooks.html", { 
+        "reserves": reserves
+    })
+
+def myfees(request):
+    # select records from the database
+    userid = request.session["userid"][0]
+    c = connection.cursor()
+    q = f"SELECT BOOKID, USERID, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
+        f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0 AND USERID = '{userid}'"
+    c.execute(q)
+    records = c.fetchall()
+    # keep user's selections
+    if request.method == "POST":
+        # get selected bookids
+        if "bookids" not in request.POST:
+            return render(request, "library/payment.html", {
+                "records": records,
+                "total": 0
+            })
+        results = dict(request.POST)["bookids"]
+        print(request.POST["button"])
+        bookids = [int(i) for i in results]
+        # calculate the sum of fine
+        sum = 0
+        for record in list(records):
+            if list(record)[0] in bookids:
+                sum += list(record)[3]
+        type = request.POST["button"]
+        # if calculate fees
+        if type == "calculate fees":
+            return render(request, "library/payment.html", {
+                "records": records,
+                "bookids": bookids,
+                "total": sum
+            })
+        # if payment
+        return render(request, "library/pay.html", {
+            "total": sum
+        })
+    return render(request, "library/payment.html", {
+        "records": records,
+        "total": 0
+    })
+
+
 def borrow(request, bookid):
     initialiseEmptyUserID(request)
     if not request.session["userid"]:
@@ -48,7 +119,7 @@ def borrow(request, bookid):
     # if book does not exist
     if not book:
         message = "Book does not exist."
-    # if book is available
+    # if book is available (not borrowed or reserved)
     elif list(book)[2] == "AVAILABLE":
         # check if the user has reached the borrowing limit
         userid = request.session["userid"][0]
@@ -57,7 +128,7 @@ def borrow(request, bookid):
         number = c.fetchone()
         if number and list(number)[0] >= 4:
             message = "You have reached your borrowing limit (max. 4 books)."
-        else :
+        else:
             # insert into the record and update the book status
             duedate = date.today() + timedelta(days=27)
             value = (bookid, userid, duedate.strftime("%Y-%m-%d"), 0)
@@ -74,7 +145,47 @@ def borrow(request, bookid):
 
 
 def extend(request, bookid):
-    return HttpResponse("")
+    initialiseEmptyUserID(request)
+    if not request.session["userid"]:
+        return HttpResponseRedirect(reverse("login"))
+    c = connection.cursor()
+    # select current book
+    q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
+    c.execute(q)
+    book = c.fetchone()
+    # if book does not exist
+    if not book:
+        message = "Book does not exist."
+    else:
+        # check if the user borrow the book
+        userid = request.session["userid"][0]
+        q = f"SELECT * FROM BORROWS WHERE USERID = '{userid}' AND BOOKID = {bookid}"
+        c.execute(q)
+        record = c.fetchone()
+        # check if there is any other user reserving the book
+        q = f"SELECT USERID FROM RESERVES WHERE BOOKID = {bookid}"
+        c.execute(q)
+        reservation = c.fetchone()
+        if not record:
+            message = "You are not borrowing this book."
+        elif reservation:
+            message = "There is another user reserving the book." 
+        elif date.today() > list(record)[2]:
+            message = "You have an outstanding fine. Please proceed to the payment before extending the book."
+        elif list(record)[3] >= 2:
+            message = "You have reached the extension limit. Please return the book first before further extension."
+        elif (list(record)[2] - date.today()).days > 7:
+            message = "You can extend the book at least 1 week in advance."
+        # if the extension is succesfull:
+        else:
+            extension = list(record)[3] + 1
+            print(extension)
+            duedate = (list(record)[2] + timedelta(days=28)).strftime("%Y-%m-%d")
+            q = f"UPDATE BORROWS SET EXTENSION = {extension}, DUEDATE = '{duedate}' WHERE BOOKID = {bookid} and USERID = '{userid}'"
+            c.execute(q)
+            message = "Extension is successfull."
+    request.session["message"] = message
+    return HttpResponseRedirect(reverse("index"))
 
 
 def reserve(request, bookid):
