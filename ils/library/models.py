@@ -10,6 +10,8 @@ from django.db import models
 
 class Adminuser(models.Model):
     userid = models.CharField(db_column='userID', primary_key=True, max_length=50)  # Field name made lowercase.
+    name = models.CharField(max_length=50)
+    email = models.CharField(unique=True, max_length=50)
     password = models.CharField(max_length=50)
 
     class Meta:
@@ -87,7 +89,6 @@ class Book(models.Model):
     bookid = models.IntegerField(db_column='bookID', primary_key=True)  # Field name made lowercase.
     title = models.CharField(max_length=50)
     availability = models.CharField(max_length=12, blank=True, null=True)
-    userid = models.ForeignKey('Memberuser', models.DO_NOTHING, db_column='userID', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -97,8 +98,7 @@ class Book(models.Model):
 class Borrows(models.Model):
     bookid = models.OneToOneField(Book, models.DO_NOTHING, db_column='bookID', primary_key=True)  # Field name made lowercase.
     userid = models.ForeignKey('Memberuser', models.DO_NOTHING, db_column='userID')  # Field name made lowercase.
-    duedate = models.DateField(db_column='dueDate', blank=True, null=True)  # Field name made lowercase.
-    stats = models.CharField(max_length=8, blank=True, null=True)
+    duedate = models.DateField(db_column='dueDate')  # Field name made lowercase.
     extension = models.IntegerField(blank=True, null=True)
 
     class Meta:
@@ -153,8 +153,21 @@ class DjangoSession(models.Model):
 
 class Memberuser(models.Model):
     userid = models.CharField(db_column='userID', primary_key=True, max_length=50)  # Field name made lowercase.
+    name = models.CharField(max_length=50)
+    email = models.CharField(unique=True, max_length=50)
     password = models.CharField(max_length=50)
 
     class Meta:
         managed = False
         db_table = 'memberuser'
+
+
+class Reserves(models.Model):
+    bookid = models.OneToOneField(Book, models.DO_NOTHING, db_column='bookID', primary_key=True)  # Field name made lowercase.
+    userid = models.ForeignKey(Memberuser, models.DO_NOTHING, db_column='userID')  # Field name made lowercase.
+    duedate = models.DateField(db_column='dueDate', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'reserves'
+        unique_together = (('bookid', 'userid'),)
