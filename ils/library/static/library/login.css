@@ -1,0 +1,150 @@
+html {
+  box-sizing: border-box;
+}
+
+* {
+  box-sizing: inherit;
+}
+
+.bg {
+  background: #e5e5e5;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+
+  height: 90vh;
+  width: 95vw;
+  padding-top: 5vh;
+  padding-left: 2vw;
+}
+
+.white1 {
+  width: 100%;
+  padding-top: 18vh;
+
+  background: #ffffff;
+  box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+  text-align: -webkit-center;
+}
+
+.white2 {
+  width: 100%;
+  padding-top: 7vh;
+
+  background: #ffffff;
+  box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+  text-align: -webkit-center;
+}
+
+.front {
+  width: 60vw;
+  margin-left: 2vw;
+
+  padding-top: 20px;
+  padding-left: 20px;
+
+  font-family: Raleway;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 5vw;
+  line-height: 5vw;
+
+  color: #ffffff;
+
+  background: linear-gradient(90deg, #5bbae8 0%, #65e5c4 0.01%, #13366e 100%);
+}
+
+.container {
+  width: 90%;
+  min-width: 500px;
+  margin: auto;
+}
+
+.btn--submit {
+  background: linear-gradient(90deg, #64e5c6 0%, #13366d 100%);
+  border-radius: 78px;
+
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 21px;
+
+  text-align: center;
+  color: #ffffff;
+
+  border: none;
+  align-self: center;
+  width: 13vw;
+  margin-top: 2vh;
+}
+
+.log_in {
+  font-family: Raleway;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 56px;
+  text-align: center;
+
+  color: #000000;
+}
+
+.sign_up {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 21px;
+  margin-top: 1vh;
+  /* identical to box height */
+
+  text-align: center;
+
+  color: #615fa4;
+}
+
+.username {
+  width: 30vw;
+  height: 21px;
+  left: 20px;
+
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 21px;
+  /* identical to box height */
+  margin-top: 4vh;
+  text-align: left;
+
+  color: #000000;
+}
+
+.input {
+  width: 30vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+}
+
+.in_white {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
+.no_decor {
+  text-decoration: none;
+  color: white;
+}
+
+.error {
+  font-family: Roboto;
+  font-size: 12px;
+  color: red;
+  margin-top: 4vh;
+}

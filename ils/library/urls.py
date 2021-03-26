@@ -18,8 +18,12 @@ urlpatterns = [
     path("myaccount/fees", views.myfees, name="myfees"),
 
     # ADMIN USER
-    path("books/borrowed", views.borrowed, name="borrowed"),
-    path("books/reserved", views.reserved, name="reserved"),
+    path("admin/login", views.adminlogin, name="adminlogin"),
+    path("admin/logout", views.adminlogout, name="adminlogout"),
+    path("admin/home", views.adminhome, name="adminhome"),
+    path("admin/borrowings", views.adminborrowings, name="adminborrowings"),
+    path("admin/reservations", views.adminreservations, name="adminreservations"),
+    path("admin/fines", views.adminfines, name="adminfines"),
     
     # USER AUTHENTICATION
     path("register", views.register, name="register"),

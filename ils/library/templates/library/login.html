@@ -1,20 +1,42 @@
 {% extends "library/layout.html" %}
 
+{% load static %}
+
+{% block head %}
+<link href="{% static 'library/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav %}
+{% endblock %}
+
 {% block body %}
 
-    LOGIN
-    
-    {{message}}
+<body style="background-color: #e5e5e5">
+    <div class="row">
 
-    <form method="POST" action="{% url 'login' %}">
-        {% csrf_token %}
-        <p>User ID or email:</p>
-        <input type="text" name="userid" value="{{id}}">
-        <p>Password:</p>
-        <input type="password" name="password">
-        <input type="submit" value="login">
-    </form>
+        <div class="front">MY<br />LIBRARY</div>
 
-    <a href="{% url 'register' %}">Register</a>
+        <div class="white1">
+            <div class="in_white">
+
+                <div class="log_in">Log In</div>
+
+                <form method="POST" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="username">Username</div>
+                    <input class="input" type="text" name="userid" value="{{id}}">
+                    <div class="username">Password</div>
+                    <input class="input" type="password" name="password">
+
+                    <div class="error">{{message}}</div>
+                    <button class="btn--submit" value="login">Log in</button>
+                </form>
+
+                <a class="sign_up" href="{% url 'register' %}">Sign Up Here</a>
+
+            </div>
+        </div>
+    </div>
+</body>
 
 {% endblock %}

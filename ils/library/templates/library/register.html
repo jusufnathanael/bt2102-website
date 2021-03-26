@@ -1,29 +1,63 @@
 {% extends "library/layout.html" %}
 
+{% load static %}
+
+{% block head %}
+    <link href="{% static 'library/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav %}
+{% endblock %}
+
 {% block body %}
 
-    REGISTER
-    
-    <ul>
-        {% for message in messages %}
-            <li>{{message}}</li>
-        {% endfor %}
-    </ul>
+<body style="background-color: #e5e5e5">
+    <div class="row">
 
-    <form method="POST" action="{% url 'register' %}">
-        {% csrf_token %}
-        <p>Name:</p>
-        <input type="text" name="name" value="{{name}}">
-        <p>User ID:</p>
-        <input type="text" name="userid" value="{{userid}}">
-        <p>Email:</p>
-        <input type="text" name="email" value="{{email}}">
-        <p>Password:</p>
-        <input type="password" name="password">
-        <input type="submit" value="register">
-    </form>
+        <div class="front">MY<br />LIBRARY</div>
 
-    <a href="{% url 'login' %}">Log in</a>
+            <div class="white2">
+                <div class="in_white">
+
+                <div class="log_in">Sign Up</div>
+
+                <form method="POST" action="{% url 'register' %}">
+                    {% csrf_token %}
+                    <div class="username">Full Name</div>
+                    <input class="input" type="text" name="name" value="{{name}}">
+                    <div class="username">Username</div>
+                    <input class="input" type="text" name="userid" value="{{userid}}">
+                    <div class="username">Email</div>
+                    <input class="input" type="text" name="email" value="{{email}}">
+                    <div class="username">Password</div>
+                    <input class="input" type="password" name="password">
+
+
+
+                    {% if messages %}
+                    
+                    <script>
+                        function myFunction() {
+                        alert("Hello! I am an alert box!");
+                        }
+                        </script>
+                    {% endif %}
+
+                    
+                    <div class="error">
+                        {% for message in messages %}
+                            {{message}}<br>
+                        {% endfor %}
+                    </div>
+                    
+
+                    <button onclick="myFunction()" class="btn--submit" value="register">Register</button>
+                </form>
+                <a class="sign_up" href="{% url 'login' %}">Log In Here</a>
+            </div>
+        </div>
+    </div>
+</body>
 
 {% endblock %}
 

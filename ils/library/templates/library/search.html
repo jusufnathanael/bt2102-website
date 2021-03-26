@@ -1,0 +1,8 @@
+{% extends "library/index.html" %}
+
+<form action="{% url 'search' %}" method="get">
+    <input class="search" type="text" name="q" placeholder="Search Books">
+</form>
+
+
+{% endblock %}

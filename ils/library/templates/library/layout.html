@@ -1,10 +1,42 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>Library</title>
-    </head>
-    <body>
-        {% block body %}
-        {% endblock %}
-    </body>
+
+<head>
+    <title>Library</title>
+    {% block head %}
+    {% endblock %}
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@800&family=Roboto:wght@400;500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+{% block nav %}
+
+<body class="body">
+    <div class="white">
+        <div class="library">My Library</div>
+        <div class="menu">
+            {% block search %}
+            <div class="bar">
+                <a class="color2" href="./main_page.html">Search</a>
+            </div>
+            {% endblock %}
+            {% block myaccount %}
+            <div class="bar">
+                <a class="color2" href="./my_account.html">My Account</a>
+            </div>
+            {% endblock %}
+            {% block logout %}
+            <div class="bar">
+                <a class="color2" href="./login.html">Log Out</a>
+            </div>
+            {% endblock %}
+        </div>
+    </div>
+</body>
+{% endblock %}
+{% block body %}
+{% endblock %}
+
 </html>
