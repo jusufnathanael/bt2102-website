@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="dropdown.css" />
+  </head>
+  <script>
+    /* When the user clicks on the button,
+      toggle between hiding and showing the dropdown content */
+    function myFunction() {
+      document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    function filterFunction() {
+      var input, filter, ul, li, a, i;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      div = document.getElementById("myDropdown");
+      a = div.getElementsByTagName("a");
+      for (i = 0; i < a.length; i++) {
+        txtValue = a[i].textContent || a[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          a[i].style.display = "";
+        } else {
+          a[i].style.display = "none";
+        }
+      }
+    }
+  </script>
+
+  <body>
+    <div class="dropdown">
+      <button onclick="myFunction()" class="category">
+        Advanced Search Filters<img src="./arrow.svg" class="small" />
+      </button>
+      <div id="myDropdown" class="dropdown-content">
+        <div class="search_filter">
+          <div class="inside">
+            <input
+              type="text"
+              placeholder="Search.."
+              id="myInput"
+              onkeyup="filterFunction()"
+            />
+            <div class="categories">
+              <label class="container"
+                >One
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+              <label class="container"
+                >Two
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+              <label class="container"
+                >Three
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+              <label class="container"
+                >Four
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+              <label class="container"
+                >Five
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+              <label class="container"
+                >Six
+                <input type="checkbox" />
+                <span class="checkmark"></span>
+              </label>
+            </div>
+          </div>
+          <div class="category">
+            <input type="number" placeholder="Year" max="2021" id="myInput" />
+          </div>
+          <div class="category">
+            <input type="text" placeholder="Author Name" id="myInput" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
