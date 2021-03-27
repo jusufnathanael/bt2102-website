@@ -1,8 +1,83 @@
-{% extends "library/index.html" %}
+{% load static %}
 
 <form action="{% url 'search' %}" method="get">
-    <input class="search" type="text" name="q" placeholder="Search Books">
+
+    <div class="search">
+        <div>
+            <img src="{% static 'library/search.svg' %}" class="image">
+            {% comment %} Search title {% endcomment %}
+            <input class="search_input" type="text" name="qt" placeholder="Search title" value="{{ title }}">
+        </div>
+        <button class="search_click" style="cursor:pointer; border:none">
+            <p class="search_font">Search</p>
+        </button>
+    </div>
+
+    <div class="advanced">
+        <div class="dropdown">
+
+            <div onclick="myFunction()" class="category">
+                Advanced Search Filters
+                <img src="{% static 'library/arrow.svg' %}" class="small">
+            </div>
+
+            <div id="myDropdown" class="dropdown-content">
+                <div class="search_filter">
+
+                    {% comment %} Search categories from list {% endcomment %}
+                    <div class="inside">
+                        <input type="text" placeholder="Category" id="myInput" onkeyup="filterFunction()" readonly>
+                        <div class="categories">
+                            {% for category in allcategories %}
+                            <label class="container">
+                                {{ category }}
+                                {% if category in categories %}
+                                <input type="checkbox" name="qc" value="{{ category }}" checked>
+                                {% else %}
+                                <input type="checkbox" name="qc" value="{{ category }}">
+                                {% endif %}
+                                <span class="checkmark"></span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% comment %} Search published year {% endcomment %}
+                    <div class="inside">
+                        <input id="myInput" type="number" name="qy" placeholder="Year" value="{{ year }}" min="1930"
+                            max="{% now 'Y' %}">
+                    </div>
+
+                    {% comment %} Search author {% endcomment %}
+                    <div class="inside">
+                        <input id="myInput" type="text" name="qa" placeholder="Author Name" value="{{ author }}">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </form>
 
+<script>
+    /* When the user clicks on the button, toggle between hiding and showing the dropdown content */
+    function myFunction() {
+        document.getElementById("myDropdown").classList.toggle("show");
+    }
 
-{% endblock %}
+    function filterFunction() {
+        var input, filter, ul, li, a, i;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        div = document.getElementById("myDropdown");
+        a = div.getElementsByTagName("a");
+        for (i = 0; i < a.length; i++) {
+            txtValue = a[i].textContent || a[i].innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                a[i].style.display = "";
+            } else {
+                a[i].style.display = "none";
+            }
+        }
+    }
+</script>

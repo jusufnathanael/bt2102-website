@@ -3,6 +3,9 @@ from django.shortcuts import redirect, render, reverse
 from django.db import connection
 from datetime import date, timedelta, datetime
 import pymongo, re
+from array import array
+
+from .helper import getCategories, formatBook
 
 # TODO: add initialiseEmptyUserID() to all the functions below
 
@@ -14,9 +17,8 @@ def initialiseEmptyUserID(request):
 def index(request):
     initialiseEmptyUserID(request)
     if not request.session["userid"]:
-        if request.session["admin"]:
-            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
+    
     c = connection.cursor()
     q = "SELECT * FROM BOOK"
     c.execute(q)
@@ -26,51 +28,77 @@ def index(request):
         message = request.session["message"]
         request.session["message"] = []
     
-    q = "SELECT AVAILABILITY FROM BOOKTEST"
-    c.execute(q)
-    availabilities = c.fetchall()
     
-    
-    # connect to MongoDB
+    # get all books from MongoDB
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
-    # get all books
     mydb = myclient['books']
     mycol = mydb['libbooks']
     m = mycol.find({})
-    # format each book
-    i = 0
-    books = []
-    for book in list(m):
-        bookaslist = list(book.values())
-        # formatting for date
-        dateasstring = str(re.findall("([0-9]{4}-[0-9]{2}-[0-9]{2})", bookaslist[4])).strip('[]\'')
-        bookaslist[4] = (datetime.strptime(dateasstring, "%Y-%m-%d")).date() if dateasstring else ''
-        # formatting for authors and categories
-        bookaslist[9] = bookaslist[9].strip('\'][\'').split('\', \'')
-        bookaslist[10] = bookaslist[10].strip('\'][\'').split('\', \'')
-        # add availabilities from mysql database
-        bookaslist += availabilities[i]
-        books += [bookaslist]
-        i += 1
 
+    # get books availabilities
+    q = "SELECT AVAILABILITY FROM BOOKTEST"
+    c.execute(q)
+    availabilities = c.fetchall()
+    # format books
+    books = formatBook(m, availabilities)
     # get all categories
-    rawcategories = mycol.distinct("categories")
-    # data cleaning
-    categories = []
-    exists = set()
-    for items in rawcategories:
-        for item in items.strip('][').replace('\'', '').split(', '):
-            if item and item.lower() not in exists:
-                exists.add(item.lower())
-                categories += [item]
+    allcategories = getCategories(mycol)
 
-    
     return render(request, "library/index.html", {
         "books": results,
         "booksmongo": books,
         "message": message,
-        "categories": categories
+        "allcategories": allcategories
     })
+
+
+def search(request):
+    # get search inputs
+    title = request.GET["qt"]
+    author = request.GET["qa"]
+    categories = request.GET.getlist("qc")
+    year = request.GET["qy"]
+
+    # get all books from MongoDB
+    myclient = pymongo.MongoClient("mongodb://localhost:27017")
+    mydb = myclient['books']
+    mycol = mydb['libbooks']
+    
+    print(categories)
+    resultc = []
+    for cat in categories:
+        resultc += [f"[\'{cat}\']"]
+    
+    search = mycol.aggregate([\
+        {"$match": {"$and": [\
+            {"title": {"$regex": f"{title}","$options": "i"},\
+            "authors": {"$regex": f"{author}", "$options": "i"},\
+            #"categories": {"$in": f"{resultc}"},\
+            "publishedDate": {"$regex": f"{year}", "$options": "i"}\
+            }
+        ]}},
+        #{"$project": {"_id":1,"title":1,"categories":1}} 
+    ])
+    
+    # get books availabilites
+    c = connection.cursor()
+    q = "SELECT AVAILABILITY FROM BOOKTEST"
+    c.execute(q)
+    availabilities = c.fetchall()
+    # format books
+    books = formatBook(search, availabilities)
+    # get all categories
+    allcategories = getCategories(mycol)    
+
+    return render(request, "library/index.html", {
+        "booksmongo": books,
+        "allcategories": allcategories,
+        "title": title,
+        "categories": categories,
+        "year": year,
+        "author": author
+    })
+
 
 def details(request, bookid):
     c = connection.cursor()
@@ -115,22 +143,56 @@ def myreservations(request):
     })
 
 
-def adminfines(request):
+def myfees(request):
     initialiseEmptyUserID(request)
     if not request.session["userid"]:
-        if not request.session["admin"]:
-            return HttpResponseRedirect(reverse("login"))
+        if request.session["admin"]:
+            return HttpResponseRedirect(reverse("adminhome"))
+        return HttpResponseRedirect(reverse("login"))
+    userid = request.session["userid"][0]
     # get borrow records
     c = connection.cursor()
     q = f"SELECT BOOKID, USERID, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
-        f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0"
+        f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0 AND USERID = '{userid}'"
     c.execute(q)
     records = c.fetchall()
     # keep user's selections
-    return render(request, "library/temp.html", {
+    if request.method == "POST":
+        button = request.POST["button"]
+        # if payment is successfull
+        if button == "success":
+            return HttpResponseRedirect(reverse("index"))
+        # get selected bookids
+        if "bookids" not in request.POST:
+            return render(request, "library/payment.html", {
+                "records": records,
+                "total": 0
+            })
+        results = dict(request.POST)["bookids"]
+        print(request.POST["button"])
+        bookids = [int(i) for i in results]
+        # calculate total fine
+        sum = 0
+        for record in list(records):
+            if list(record)[0] in bookids:
+                sum += list(record)[3]
+        if button == "calculate fees":
+            return render(request, "library/payment.html", {
+                "records": records,
+                "bookids": bookids,
+                "total": sum
+            })
+        # if user wants to pay
+        if button == "pay":
+            return render(request, "library/pay.html", {
+                "total": sum
+            })
+    return render(request, "library/payment.html", {
         "records": records,
+        "total": 0
     })
-    return HttpResponse("")
+
+
 
 
 def borrow(request, bookid):
@@ -348,41 +410,6 @@ def restore(request, bookid):
     return HttpResponseRedirect(reverse("index"))
 
 
-def search(request):
-    title = request.GET["qt"]
-    author = request.GET["qa"]
-    category = request.GET["qc"]
-    year = request.GET["qy"]
-    # if the query matches
-    c = connection.cursor()
-    #q = f"SELECT * FROM BOOK WHERE TITLE REGEXP '{title}'"
-    #c.execute(q)
-    #results = c.fetchall()
-    results = []
-
-    # connect to MongoDB
-    myclient = pymongo.MongoClient("mongodb://localhost:27017")
-    # get all books
-    mydb = myclient['books']
-    mycol = mydb['libbooks']
-
-    search = mycol.aggregate([\
-        {"$match": {"$and": [\
-            {"title": {"$regex": f"{title}","$options": "i"},\
-            "authors": {"$regex": f"{author}", "$options": "i"},\
-            "categories": {"$regex": f"{category}", "$options": "i"},\
-            "publishedDate": {"$regex": f"{year}", "$options": "i"}\
-            }
-        ]}},
-        {"$project": {"_id":1,"title":1,"categories":1}} 
-    ])
-    print(list(search))
-    for s in search:
-        print(s)
-
-    return render(request, "library/index.html", {
-        "books": results
-    })
 
 
 
@@ -411,54 +438,22 @@ def adminreservations(request):
     })
 
 
-def myfees(request):
+def adminfines(request):
     initialiseEmptyUserID(request)
     if not request.session["userid"]:
-        if request.session["admin"]:
-            return HttpResponseRedirect(reverse("adminhome"))
-        return HttpResponseRedirect(reverse("login"))
-    userid = request.session["userid"][0]
+        if not request.session["admin"]:
+            return HttpResponseRedirect(reverse("login"))
     # get borrow records
     c = connection.cursor()
     q = f"SELECT BOOKID, USERID, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
-        f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0 AND USERID = '{userid}'"
+        f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0"
     c.execute(q)
     records = c.fetchall()
     # keep user's selections
-    if request.method == "POST":
-        button = request.POST["button"]
-        # if payment is successfull
-        if button == "success":
-            return HttpResponseRedirect(reverse("index"))
-        # get selected bookids
-        if "bookids" not in request.POST:
-            return render(request, "library/payment.html", {
-                "records": records,
-                "total": 0
-            })
-        results = dict(request.POST)["bookids"]
-        print(request.POST["button"])
-        bookids = [int(i) for i in results]
-        # calculate total fine
-        sum = 0
-        for record in list(records):
-            if list(record)[0] in bookids:
-                sum += list(record)[3]
-        if button == "calculate fees":
-            return render(request, "library/payment.html", {
-                "records": records,
-                "bookids": bookids,
-                "total": sum
-            })
-        # if user wants to pay
-        if button == "pay":
-            return render(request, "library/pay.html", {
-                "total": sum
-            })
-    return render(request, "library/payment.html", {
+    return render(request, "library/temp.html", {
         "records": records,
-        "total": 0
     })
+    return HttpResponse("")
 
 
 def adminlogin(request):
@@ -617,7 +612,7 @@ def login(request):
                 message = "User ID does not exist."
                 id = ''
             return render(request, "library/login.html", {
-                "message": message,
+                "messages": message,
                 "id": id
             })
     # render empty login page

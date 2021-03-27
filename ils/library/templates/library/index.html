@@ -13,9 +13,13 @@
 {% endblock %}
 
 {% block body %}
+
+
+
+
 {{ message }}
 
-{% include "library/searchfix.html" %}
+{% include "library/search.html" %}
 
 <div class="view">
     <div class="view_scroll">
@@ -96,7 +100,7 @@
 
 <a href="{% url 'logout' %}">Log Out</a>
 
-
+{% endcomment %}
 
 <form action="{% url 'search' %}" method="get">
     <input class="search" type="text" name="qt" placeholder="Search titles">
@@ -104,8 +108,14 @@
     <input class="search" type="text" name="qc" placeholder="Search categories">
     <input class="search" type="text" name="qy" placeholder="Search year">
     <input type="submit" value="submit">
+    <input type="checkbox" name="qtest" value="one">
+    <input type="checkbox" name="qtest" value="two">
+    <input type="checkbox" name="qtest" value="three">
+    <input type="checkbox" name="qtest" value="four">
+    <input type="checkbox" name="qtest" value="five">
+    <input type="checkbox" name="qtest" value="six">
 </form>
 
-{% endcomment %}
+
 
 {% endblock %}

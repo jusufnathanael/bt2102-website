@@ -11,6 +11,22 @@
         rel="stylesheet">
 </head>
 
+{% block script %}
+{% if messages %}
+<script>
+    window.onload = setTimeout(function () {
+        var message = "";
+        var array = "{{ messages }}".replaceAll("&#x27;", "").replace("]", "").replace("[", "").split(", ");
+        for (i = 0; i < array.length; i += 1) {
+            message += array[i] + "\n";
+        }
+        alert(message);
+    }, 50);
+</script>
+{% endif %}
+{% endblock %}
+
+
 {% block nav %}
 
 <body class="body">
@@ -36,6 +52,7 @@
     </div>
 </body>
 {% endblock %}
+
 {% block body %}
 {% endblock %}
 

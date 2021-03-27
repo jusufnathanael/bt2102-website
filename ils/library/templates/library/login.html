@@ -13,27 +13,19 @@
 
 <body style="background-color: #e5e5e5">
     <div class="row">
-
-        <div class="front">MY<br />LIBRARY</div>
-
+        <div class="front">MY<br>LIBRARY</div>
         <div class="white1">
             <div class="in_white">
-
                 <div class="log_in">Log In</div>
-
                 <form method="POST" action="{% url 'login' %}">
                     {% csrf_token %}
                     <div class="username">Username</div>
                     <input class="input" type="text" name="userid" value="{{id}}">
                     <div class="username">Password</div>
-                    <input class="input" type="password" name="password">
-
-                    <div class="error">{{message}}</div>
-                    <button class="btn--submit" value="login">Log in</button>
+                    <input class="input" type="password" name="password"><br><br>
+                    <button class="btn--submit" style="cursor:pointer" value="login">Log in</button>
                 </form>
-
                 <a class="sign_up" href="{% url 'register' %}">Sign Up Here</a>
-
             </div>
         </div>
     </div>

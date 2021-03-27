@@ -79,6 +79,7 @@ html {
   align-self: center;
   width: 13vw;
   margin-top: 2vh;
+  cursor:pointer;
 }
 
 .log_in {
