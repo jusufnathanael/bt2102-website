@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="search_results.css" />
+  </head>
+
+  <body class="body">
+    <div class="arrow"><img src="./arrow2.svg" class="size" /></div>
+    <div class="white">
+      <div class="library">My Library</div>
+      <div class="menu">
+        <div class="bar">
+          <div class="color">Search</div>
+        </div>
+        <div class="bar" color="#000000">
+          <a class="color2" href="./my_account.html">My Account</a>
+        </div>
+        <div class="bar">
+          <a class="color2" href="./login.html">Log Out</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="search">
+      <div>
+        <img src="./search.svg" class="image" /><input class="search_input" />
+      </div>
+      <div class="search_click">
+        <p class="search_font">Search</p>
+      </div>
+    </div>
+    <div class="advanced">
+      <div class="dropdown">
+        <button onclick="myFunction()" class="category">
+          Advanced Search Filters<img src="./arrow.svg" class="small" />
+        </button>
+        <div id="myDropdown" class="dropdown-content">
+          <div class="search_filter">
+            <div class="inside">
+              <input
+                type="text"
+                placeholder="Category"
+                id="myInput"
+                onkeyup="filterFunction()"
+              />
+              <div class="categories">
+                <label class="container"
+                  >One
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+                <label class="container"
+                  >Two
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+                <label class="container"
+                  >Three
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+                <label class="container"
+                  >Four
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+                <label class="container"
+                  >Five
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+                <label class="container"
+                  >Six
+                  <input type="checkbox" />
+                  <span class="checkmark"></span>
+                </label>
+              </div>
+            </div>
+            <div class="inside">
+              <input
+                type="number"
+                placeholder="Year"
+                min="1000"
+                max="2021"
+                id="myInput"
+              />
+            </div>
+            <div class="inside">
+              <input type="text" placeholder="Author Name" id="myInput" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="view">
+      <div class="view_scroll">
+        <div class="view_in">
+          <div class="column">
+            <div class="row">
+              <img
+                src="https://images.idgesg.net/images/article/2020/08/android-awkward-timing-100855433-large.jpg"
+                class="book_image"
+              />
+            </div>
+            <div class="book">
+              <div class="book_title">Book Title</div>
+              <div class="content">
+                <b>by Iona Tanan. </b><br />
+                <br />Date Published: 04/01/2009 <br />ISBN: <br />Page Count:
+                <div class="description">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. In at
+                  ipsum non tellus volutpat fringilla. Morbi pretium magna vitae
+                  odio pulvinar, euismod porttitor justo fringilla. Nulla sapien
+                  massa, tincidunt nec sapien tempor, laoreet molestie ex. Orci
+                  varius natoque penatibus et magnis dis parturient montes,
+                  nascetur ridiculus mus. Lorem ipsum dolor sit amet,
+                  consectetur adipiscing elit. In at ipsum non tellus volutpat
+                  fringilla. Morbi pretium magna vitae odio pulvinar, euismod
+                  porttitor justo fringilla. Nulla sapien massa, tincidunt nec
+                  sapien tempor, laoreet molestie ex. Orci varius natoque
+                  penatibus et magnis dis parturient montes, nascetur ridiculus
+                  mus. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  In at ipsum non tellus volutpat fringilla. Morbi pretium magna
+                  vitae odio pulvinar, euismod porttitor justo fringilla. Nulla
+                  sapien massa, tincidunt nec sapien tempor, laoreet molestie
+                  ex. Orci varius natoque penatibus et magnis dis parturient
+                  montes, nascetur ridiculus mus. Lorem ipsum dolor sit amet,
+                  consectetur adipiscing elit. In at ipsum non tellus volutpat
+                  fringilla. Morbi pretium magna vitae odio pulvinar, euismod
+                  porttitor justo fringilla. Nulla sapien massa, tincidunt nec
+                  vitae odio pulvinar, euismod porttitor justo fringilla. Nulla
+                  sapien massa, tincidunt nec sapien tempor, laoreet molestie
+                  ex. Orci varius natoque penatibus et magnis dis parturient
+                  montes, nascetur ridiculus mus. Lorem ipsum dolor sit amet,
+                  consectetur adipiscing elit. In at ipsum non tellus volutpat
+                  fringilla. Morbi pretium magna vitae odio pulvinar, euismod
+                  porttitor justo fringilla.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="available">
+            <div class="status">
+              STATUS: AVAILABLE<br />
+              EXPECTED DUE DATE: 01/04/2021
+            </div>
+            <div class="borrow">Borrow</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* When the user clicks on the button,
+        toggle between hiding and showing the dropdown content */
+      function myFunction() {
+        document.getElementById("myDropdown").classList.toggle("show");
+      }
+
+      function filterFunction() {
+        var input, filter, ul, li, a, i;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        div = document.getElementById("myDropdown");
+        a = div.getElementsByTagName("a");
+        for (i = 0; i < a.length; i++) {
+          txtValue = a[i].textContent || a[i].innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            a[i].style.display = "";
+          } else {
+            a[i].style.display = "none";
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
