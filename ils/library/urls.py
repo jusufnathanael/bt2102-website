@@ -13,9 +13,7 @@ urlpatterns = [
     path("cancel/<int:bookid>", views.cancel, name="cancel"),
 
     # MEMBER USER
-    path("myaccount/borrowings", views.myborrowings, name="myborrowings"),
-    path("myaccount/reservations", views.myreservations, name="myreservations"),
-    path("myaccount/fees", views.myfees, name="myfees"),
+    path("myaccount/", views.myaccount, name="myaccount"),
 
     # ADMIN USER
     path("admin/login", views.adminlogin, name="adminlogin"),

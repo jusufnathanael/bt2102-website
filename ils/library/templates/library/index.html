@@ -8,16 +8,12 @@
 
 {% block search %}
 <div class="bar">
-    <div class="color">Search</div>
+    <a class="color" href="{% url 'index' %}">Search</a>
 </div>
 {% endblock %}
 
+
 {% block body %}
-
-
-
-
-{{ message }}
 
 {% include "library/search.html" %}
 
@@ -37,7 +33,9 @@
                         {% endif %}
                         {% endfor %}
                     </b>
+                    {% if book.4 %}
                     {{ book.4 | date:"Y" }}.
+                    {% endif %}
                     Category: {% for category in book.10 %}
                     {% if forloop.last %} {{ category }}.
                     {% else %} {{ category }},
@@ -50,15 +48,30 @@
             </div>
 
             <div class="availablity">
-                <div class="status">STATUS: {{ book.11 }}<br></div>
                 {% if book.11 == "AVAILABLE" %}
+                <div class="status">STATUS: {{ book.11 }}<br></div>
                 <a href="{% url 'borrow' book.0 %}">
                     <div class="borrow">Borrow</div>
                 </a>
                 {% elif book.11 == "BORROWED" %}
+                <div class="status">
+                    STATUS: {{ book.11 }}<br>
+                    EXPECTED DUE DATE: {{ book.12 }}
+                </div>
                 <a href="{% url 'reserve' book.0 %}">
                     <div class="borrow">Reserve</div>
                 </a>
+                {% elif book.11 == "RESERVED" %}
+                <div class="status">
+                    STATUS: {{ book.11 }}
+                    {% if book.12 %}
+                    EXPECTED DUE DATE: {{ book.12 }}
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="status">
+                    STATUS: {{ book.11 }}
+                </div>
                 {% endif %}
             </div>
 
@@ -100,8 +113,6 @@
 
 <a href="{% url 'logout' %}">Log Out</a>
 
-{% endcomment %}
-
 <form action="{% url 'search' %}" method="get">
     <input class="search" type="text" name="qt" placeholder="Search titles">
     <input class="search" type="text" name="qa" placeholder="Search authors">
@@ -116,6 +127,6 @@
     <input type="checkbox" name="qtest" value="six">
 </form>
 
-
+{% endcomment %}
 
 {% endblock %}

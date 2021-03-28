@@ -13,8 +13,7 @@ html {
 .row {
   display: flex;
   flex-direction: row;
-
-  height: 90vh;
+  height: max(90vh, 450px);
   width: 95vw;
   padding-top: 5vh;
   padding-left: 2vw;
@@ -86,7 +85,7 @@ html {
   font-family: Raleway;
   font-style: normal;
   font-weight: 800;
-  font-size: 40px;
+  font-size: 35px;
   line-height: 56px;
   text-align: center;
 
@@ -129,7 +128,7 @@ html {
   border: 1px solid #e5e5e5;
   box-sizing: border-box;
   border-radius: 5px;
-  height: 4vh;
+  height: 20px;
 }
 
 .in_white {

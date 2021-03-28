@@ -1,8 +1,32 @@
-
-
+from django.db import connection
 from datetime import datetime
 import re
 
+def initialiseEmptyMessage(request):
+    if "message" not in request.session:
+        request.session["message"] = []
+
+def getDueDates(books):
+    duedates = []
+    c = connection.cursor()
+    for book in books:
+        # search due date in reserves table
+        if book[1] == "RESERVED":
+            q = f"SELECT DUEDATE FROM RESERVES WHERE BOOKID = {book[0]}"
+            c.execute(q)
+            res = c.fetchone()
+            if res: duedates += [res[0]]
+            else: duedates += [""]
+        # search due date in borrows table
+        elif book[1] == "BORROWED":
+            q = f"SELECT DUEDATE FROM BORROWS WHERE BOOKID = {book[0]}"
+            c.execute(q)
+            res = c.fetchone()
+            if res: duedates += [res[0]]
+            else: duedates += [""]
+        else:
+            duedates += [""]
+    return duedates
 
 def getCategories(mycol):
     rawcategories = mycol.distinct("categories")
@@ -14,10 +38,9 @@ def getCategories(mycol):
             if item and item.lower() not in exists:
                 exists.add(item.lower())
                 categories += [item]
-    return categories
+    return sorted(categories)
 
-
-def formatBook(results, availabilities):
+def formatBook(results, booksall, duedates):
     # format each book
     i = 0
     books = []
@@ -30,7 +53,9 @@ def formatBook(results, availabilities):
         bookaslist[9] = bookaslist[9].strip('\'][\'').split('\', \'')
         bookaslist[10] = bookaslist[10].strip('\'][\'').split('\', \'')
         # add availabilities from mysql database
-        bookaslist += availabilities[i]
+        print(booksall[i][1])
+        bookaslist += [booksall[i][1]]
+        bookaslist += [duedates[i]]
         books += [bookaslist]
         i += 1
     return books
