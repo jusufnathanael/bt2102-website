@@ -6,6 +6,13 @@ def initialiseEmptyMessage(request):
     if "message" not in request.session:
         request.session["message"] = []
 
+def getSessionMessage(request):
+    message = ""
+    if request.session["message"]:
+        message = request.session["message"]
+        request.session["message"] = []
+    return message
+
 def getDueDates(books):
     duedates = []
     c = connection.cursor()
@@ -53,7 +60,6 @@ def formatBook(results, booksall, duedates):
         bookaslist[9] = bookaslist[9].strip('\'][\'').split('\', \'')
         bookaslist[10] = bookaslist[10].strip('\'][\'').split('\', \'')
         # add availabilities from mysql database
-        print(booksall[i][1])
         bookaslist += [booksall[i][1]]
         bookaslist += [duedates[i]]
         books += [bookaslist]

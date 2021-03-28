@@ -1,12 +1,89 @@
 {% extends "library/layout.html" %}
 
+{% load static %}
+
+{% block head %}
+<link href="{% static 'library/book.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block search %}
+<div class="bar">
+    <a class="color" href="{% url 'index' %}">Search</a>
+</div>
+{% endblock %}
+
+
 {% block body %}
 
-    <h1>{{ book.1 }}</h1>
-    <ul>
-        <li>Book ID: {{ book.0 }}</li>
-        <li>Title: {{ book.1 }}</li>
-        <li>STATUS: {{ book.2 }}</li>
-    </ul>
+{% include "library/search.html" %}
+
+<div class="view">
+    <div class="view_scroll">
+        <div class="view_in">
+            <div class="column">
+
+                <div class="row">
+                    <img src="{{ book.5 }}" class="book_image">
+                </div>
+
+                <div class="book">
+                    <div class="book_title">{{ book.1 }}</div>
+                    <div class="content">
+                        <b>
+                            by {% for author in book.9 %}
+                            {% if forloop.last %} {{ author }}.
+                            {% else %} {{ author }},
+                            {% endif %}
+                            {% endfor %}
+                        </b><br>
+                        <br>Date Published: {{ book.4 | date:"d M Y" }}
+                        <br>ISBN: {{book.2}}
+                        <br>Page Count: {{ book.3 }}
+                        <div class="description">
+                            {{book.7}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="availablity">
+                <div class="status">
+                    {% if book.11 == "AVAILABLE" %}
+                    <div class="status">STATUS: {{ book.11 }}<br></div>
+                    <a href="{% url 'borrow' book.0 %}">
+                        <div class="borrow">Borrow</div>
+                    </a>
+                    {% elif book.11 == "BORROWED" %}
+                    <div class="status">
+                        STATUS: {{ book.11 }}<br>
+                        EXPECTED DUE DATE: {{ book.12 }}
+                    </div>
+                    <a href="{% url 'reserve' book.0 %}">
+                        <div class="borrow">Reserve</div>
+                    </a>
+                    {% elif book.11 == "RESERVED" %}
+                    <div class="status">
+                        STATUS: {{ book.11 }}
+                        {% if book.12 %}
+                        EXPECTED DUE DATE: {{ book.12 }}
+                        {% endif %}<br />
+                    </div>
+                    {% else %}
+                    <div class="status">
+                        STATUS: {{ book.11 }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="arrow">
+    <a href="{% url 'index' %}">
+        <img src="{% static 'library/arrowback.svg' %}" class="size">
+    </a>
+</div>
 
 {% endblock %}

@@ -20,11 +20,13 @@
 <div class="view">
     <div class="view_scroll">
 
-        {% for book in booksmongo %}
+        {% for book in books %}
         <div class="view_in">
 
             <div class="book">
-                <div class="book_title">{{ book.1 }}</div>
+                <div class="book_title">
+                    <a href="{% url 'details' book.0 %}">{{ book.1 }}</a>
+                </div>
                 <div class="content">
                     <b>
                         by {% for author in book.9 %}
@@ -79,54 +81,5 @@
         {% endfor %}
     </div>
 </div>
-
-{% comment %}
-
-<h1>Books</h1>
-<ul>
-    {% for book in books %}
-    <li>
-        <a href="{% url 'details' book.0 %}">Book</a>
-        ({{ book.0 }}): {{ book.1 }} - {{ book.2 }}
-        {% if book.2 == "AVAILABLE" %}
-        <a href="{% url 'borrow' book.0 %}">BORROW</a>
-        {% elif book.2 == "BORROWED" %}
-        <a href="{% url 'reserve' book.0 %}">RESERVE</a>
-        <a href="{% url 'extend' book.0 %}">EXTEND</a>
-        {% elif book.2 == "RESERVED" %}
-        <a href="{% url 'cancel' book.0 %}">CANCEL</a>
-        {% else %}
-        UNAVAILABLE
-        {% endif %}
-        <a href="{% url 'restore' book.0 %}">RETURN BOOK</a>
-    </li>
-    {% endfor %}
-</ul>
-
-<ul>
-    {% for book in booksmongo %}
-    <li>
-        {{book}}
-    </li>
-    {% endfor %}
-</ul>
-
-<a href="{% url 'logout' %}">Log Out</a>
-
-<form action="{% url 'search' %}" method="get">
-    <input class="search" type="text" name="qt" placeholder="Search titles">
-    <input class="search" type="text" name="qa" placeholder="Search authors">
-    <input class="search" type="text" name="qc" placeholder="Search categories">
-    <input class="search" type="text" name="qy" placeholder="Search year">
-    <input type="submit" value="submit">
-    <input type="checkbox" name="qtest" value="one">
-    <input type="checkbox" name="qtest" value="two">
-    <input type="checkbox" name="qtest" value="three">
-    <input type="checkbox" name="qtest" value="four">
-    <input type="checkbox" name="qtest" value="five">
-    <input type="checkbox" name="qtest" value="six">
-</form>
-
-{% endcomment %}
 
 {% endblock %}

@@ -19,19 +19,29 @@
     <div class="white">
         <div class="library">My Library</div>
         <div class="menu">
-            {% block search %}
+            {% block borrowings %}
             <div class="bar">
-                <a class="color2" href="{% url 'index' %}">Search</a>
+                <a class="color2" href="{% url 'adminborrowings' %}">Borrowings</a>
             </div>
             {% endblock %}
-            {% block myaccount %}
+            {% block reservations %}
             <div class="bar">
-                <a class="color2" href="{% url 'myaccount' %}">My Account</a>
+                <a class="color2" href="{% url 'adminreservations' %}">Reservations</a>
+            </div>
+            {% endblock %}
+            {% block fines %}
+            <div class="bar">
+                <a class="color2" href="{% url 'adminfines' %}">Unpaid Fines</a>
+            </div>
+            {% endblock %}
+            {% block allusers %}
+            <div class="bar">
+                <a class="color2" href="{% url 'adminallusers' %}">Member Users</a>
             </div>
             {% endblock %}
             {% block logout %}
             <div class="bar">
-                <a class="color2" href="{% url 'logout' %}">Log Out</a>
+                <a class="color2" href="{% url 'adminlogout' %}">Log Out</a>
             </div>
             {% endblock %}
         </div>

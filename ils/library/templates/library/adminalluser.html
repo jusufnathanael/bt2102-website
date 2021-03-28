@@ -1,0 +1,37 @@
+{% extends "library/adminlayout.html" %}
+
+{% load static %}
+
+{% block head %}
+<link href="{% static 'library/admin.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block allusers %}
+<div class="bar">
+    <a class="color" href="{% url 'adminallusers' %}">Member Users</a>
+</div>
+{% endblock %}
+
+{% block body %}
+
+<div class="main">
+    <div class="title">All Member Users</div>
+    <div class="scroll_borrow">
+        <table>
+            <tr>
+                <th>Username</th>
+                <th>User ID</th>
+                <th>Email</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.0 }}</td>
+                <td>{{ user.1 }}</td>
+                <td>{{ user.2 }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}

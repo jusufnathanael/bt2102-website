@@ -1,0 +1,41 @@
+{% extends "library/adminlayout.html" %}
+
+{% load static %}
+
+{% block head %}
+<link href="{% static 'library/admin.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block borrowings %}
+<div class="bar">
+    <a class="color" href="{% url 'adminborrowings' %}">Borrowings</a>
+</div>
+{% endblock %}
+
+{% block body %}
+
+<div class="main">
+    <div class="title">Borrowed Books</div>
+    <div class="scroll_borrow">
+        <table>
+            <tr>
+                <th>Book ID</th>
+                <th>Book Title</th>
+                <th>Username</th>
+                <th>Due Date</th>
+                <th>No. of Extensions (Max: 2)</th>
+            </tr>
+            {% for book in books %}
+            <tr>
+                <td>{{ book.1 }}</td>
+                <td>{{ book.2 }}</td>
+                <td>{{ book.0 }}</td>
+                <td>{{ book.3 }}</td>
+                <td>{{ book.4 }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}

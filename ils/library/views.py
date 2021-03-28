@@ -4,25 +4,18 @@ from django.db import connection
 from datetime import date, timedelta, datetime
 import pymongo, re
 
+from .helper import initialiseEmptyMessage, getSessionMessage
 from .helper import getCategories, formatBook, initialiseEmptyMessage, getDueDates
 
-# TODO: add validation to all the functions below
+# TODO: add validation to the main functionality below
+
+# MAIN FUNCTIONALITY
 
 def index(request):
     if "userid" not in request.session:
         return HttpResponseRedirect(reverse("login"))
-    
-    # to be deleted
-    c = connection.cursor()
-    q = "SELECT * FROM BOOK"
-    c.execute(q)
-    results = c.fetchall()
-
-    message = ""
-    if request.session["message"]:
-        message = request.session["message"]
-        request.session["message"] = []
-    
+    # todo...
+    message = getSessionMessage(request)    
     
     # get all books from MongoDB
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
@@ -41,10 +34,9 @@ def index(request):
     books = formatBook(m, booksall, duedates)
     # get all categories
     allcategories = getCategories(mycol)
-
+    
     return render(request, "library/index.html", {
-        "books": results,
-        "booksmongo": books,
+        "books": books,
         "message": message,
         "allcategories": allcategories
     })
@@ -64,7 +56,7 @@ def search(request):
     for cat in categories:
         result_categories += [f"[\'{cat}\']"]
 
-    # get all books from MongoDB
+    # connect to MongoDB
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
     mydb = myclient['books']
     mycol = mydb['libbooks']
@@ -100,15 +92,13 @@ def search(request):
     # format books
     books = formatBook(search, booksall, duedates)
     # get all categories
-    allcategories = getCategories(mycol)    
+    allcategories = getCategories(mycol)
 
     return render(request, "library/index.html", {
         "booksmongo": books,
         "allcategories": allcategories,
-        "title": title,
-        "categories": categories,
-        "year": year,
-        "author": author
+        "title": title, "categories": categories,
+        "year": year, "author": author
     })
 
 
@@ -117,10 +107,42 @@ def details(request, bookid):
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     result = c.fetchone()
+    # if book does not exist
+    if not result:
+        request.session["message"] = "Book does not exist."
+        return HttpResponseRedirect(reverse("index"))
+    # connect to MongoDB
+    myclient = pymongo.MongoClient("mongodb://localhost:27017")
+    mydb = myclient['books']
+    mycol = mydb['libbooks']
+    book = mycol.find({"_id": bookid})
+    # format book into list
+    book = list(list(book)[0].values())
+    # format published date, categories, and authors
+    publisheddate = re.findall("([0-9]{4}-[0-9]{2}-[0-9]{2})", book[4])[0]
+    book[4] = datetime.strptime(publisheddate, "%Y-%m-%d").date() # published date
+    book[9] = book[9].strip('\'][\'').split('\', \'') # authors
+    book[10] = book[10].strip('\'][\'').split('\', \'') # categories
+    
+    c = connection.cursor()
+    q = f"SELECT BOOKID, AVAILABILITY FROM BOOKTEST WHERE BOOKID = {bookid}"
+    c.execute(q)
+    result = c.fetchall()
+    # get due dates
+    duedate = getDueDates(result)
+    # insert availability and due date to book
+    book += [result[0][1]]
+    book += duedate
+    # get all categories
+    allcategories = getCategories(mycol)
     return render(request, "library/book.html", {
-        "book": result
+        "book": book,
+        "allcategories": allcategories
     })
 
+
+
+# MEMBER ACCESS
 
 def myaccount(request):
 
@@ -131,14 +153,11 @@ def myaccount(request):
             return HttpResponseRedirect(reverse("myaccount"))
         # get selected bookids
         if "bookids" not in request.POST:
-            return render(request, "library/mybooks.html", {
-                "borrows": borrows,
-                "reserves": reserves,
-                "outstandings": outstandings,
-                "total": 0
+            return render(request, "library/myaccounts.html", {
+                "borrows": borrows, "reserves": reserves,
+                "outstandings": outstandings, "total": 0
             })
         results = dict(request.POST)["bookids"]
-        print(request.POST["button"])
         bookids = [int(i) for i in results]
         # calculate total fine
         sum = 0
@@ -147,12 +166,10 @@ def myaccount(request):
                 sum += list(record)[3]
         # if the user wants to calculate the fines
         if button == "Calculate":
-            return render(request, "library/mybooks.html", {
-                "borrows": borrows,
-                "reserves": reserves,
+            return render(request, "library/myaccounts.html", {
+                "borrows": borrows, "reserves": reserves,
                 "outstandings": outstandings,
-                "total": sum,
-                "bookids": bookids
+                "total": sum, "bookids": bookids
             })
         # if the user wants to pay
         if button == "Pay":
@@ -160,8 +177,10 @@ def myaccount(request):
                 "total": sum
             })
 
-    initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     # get system messages
     message = ""
@@ -189,65 +208,20 @@ def myaccount(request):
     # if the user press calculate or pay buttons
     if request.method == "POST":
         return payment(request, borrows, reserves, outstandings)
-    return render(request, "library/mybooks.html", {
+    return render(request, "library/myaccounts.html", {
         "message": message,
         "borrows": borrows,
         "reserves": reserves,
         "outstandings": outstandings
     })
 
-'''
-def myfees(request):
-    initialiseEmptyMessage(request)
-    if "userid" not in request.session:
-        return HttpResponseRedirect(reverse("login"))
-    userid = request.session["userid"][0]
-    # get borrow records
-    c = connection.cursor()
-    q = f"SELECT BOOKID, TITLE, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
-        f"FROM BORROWS NATURAL JOIN BOOK WHERE DATEDIFF(NOW(), DUEDATE) > 0 AND USERID = '{userid}'"
-    c.execute(q)
-    records = c.fetchall()
-    # keep user's selections
-    if request.method == "POST":
-        button = request.POST["button"]
-        # if payment is successfull
-        if button == "success":
-            return HttpResponseRedirect(reverse("myaccount"))
-        # get selected bookids
-        if "bookids" not in request.POST:
-            return render(request, "library/payment.html", {
-                "records": records,
-                "total": 0
-            })
-        results = dict(request.POST)["bookids"]
-        print(request.POST["button"])
-        bookids = [int(i) for i in results]
-        # calculate total fine
-        sum = 0
-        for record in list(records):
-            if list(record)[0] in bookids:
-                sum += list(record)[3]
-        if button == "calculate fees":
-            return render(request, "library/payment.html", {
-                "records": records,
-                "bookids": bookids,
-                "total": sum
-            })
-        # if user wants to pay
-        if button == "pay":
-            return render(request, "library/pay.html", {
-                "total": sum
-            })
-    return render(request, "library/payment.html", {
-        "records": records,
-        "total": 0
-    })
-'''
 
 def borrow(request, bookid):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     c = connection.cursor()
     # select current book
@@ -285,9 +259,12 @@ def borrow(request, bookid):
 def extend(request, bookid):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
-    c = connection.cursor()
     # select current book
+    c = connection.cursor()
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     book = c.fetchone()
@@ -329,9 +306,12 @@ def extend(request, bookid):
 def reserve(request, bookid):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
-    c = connection.cursor()
     # select current book
+    c = connection.cursor()
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     book = c.fetchone()
@@ -367,10 +347,13 @@ def reserve(request, bookid):
 def cancel(request, bookid):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     userid = request.session["userid"][0]
-    c = connection.cursor()
     # select current book
+    c = connection.cursor()
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     book = c.fetchone()
@@ -399,6 +382,9 @@ def cancel(request, bookid):
 def restore(request, bookid):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     # select current book
     c = connection.cursor()
@@ -423,7 +409,10 @@ def restore(request, bookid):
     # if the user needs to pay for fine
     if date.today() > duedate:
         fine = (date.today() - duedate).days
-        request.session["message"] = f"You need to pay for the fine first."
+        request.session["message"] = f"You need to pay for the outstanding fees first."
+        # delete all reservations
+        q = f"DELETE FROM RESERVES WHERE USERID = {userid}"
+        c.execute(q)
         return render(request, "library/payment.html", {
             "fine": fine
         })
@@ -451,96 +440,164 @@ def restore(request, bookid):
 
 
 
-
 # ADMIN ACCESS
 
 def adminhome(request):
-    return render(request, "library/temp.html")
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the user is not logged in
+    if "admin" not in request.session:
+        return HttpResponseRedirect(reverse("adminlogin"))
+    return HttpResponseRedirect(reverse("adminborrowings"))
+    #return render(request, "library/temp.html")
+
 
 def adminborrowings(request):
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the user is not logged in
+    if "admin" not in request.session:
+        return HttpResponseRedirect(reverse("adminlogin"))
+    message = getSessionMessage(request)
+    # main code
     c = connection.cursor()
-    q = f"SELECT * FROM BOOK WHERE AVAILABILITY = 'BORROWED'"
+    q = f"SELECT R.USERID, R.BOOKID, B.TITLE, R.DUEDATE, R.EXTENSION "\
+        f"FROM BORROWS R LEFT JOIN BOOK B ON R.BOOKID = B.BOOKID"
     c.execute(q)
     results = c.fetchall()
-    return render(request, "library/index.html", {
-        "books": results
+    return render(request, "library/adminborrowings.html", {
+        "books": results,
+        "message": message
     })
 
+
 def adminreservations(request):
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the user is not logged in
+    if "admin" not in request.session:
+        return HttpResponseRedirect(reverse("adminlogin"))
+    message = getSessionMessage(request)
+    # main code
     c = connection.cursor()
-    q = f"SELECT * FROM BOOK WHERE AVAILABILITY = 'RESERVED'"
+    q = f"SELECT * FROM RESERVES R LEFT JOIN BOOK B ON R.BOOKID = B.BOOKID"
     c.execute(q)
     results = c.fetchall()
-    return render(request, "library/index.html", {
-        "books": results
+    return render(request, "library/adminreservations.html", {
+        "books": results,
+        "message": message
     })
 
 
 def adminfines(request):
-    #initialiseEmptyUserID(request)
-    if not request.session["userid"]:
-        if not request.session["admin"]:
-            return HttpResponseRedirect(reverse("login"))
-    # get borrow records
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the user is not logged in
+    if "admin" not in request.session:
+        return HttpResponseRedirect(reverse("adminlogin"))
+    message = getSessionMessage(request)
+    # main code
     c = connection.cursor()
     q = f"SELECT BOOKID, USERID, DUEDATE, DATEDIFF(NOW(), DUEDATE) AS AMOUNT " \
         f"FROM BORROWS WHERE DATEDIFF(NOW(), DUEDATE) > 0"
     c.execute(q)
     records = c.fetchall()
-    # keep user's selections
-    return render(request, "library/temp.html", {
+    return render(request, "library/adminfines.html", {
         "records": records,
+        "message": message
     })
-    return HttpResponse("")
 
+
+def adminallusers(request): #shows all member users (username, userID, email)
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the user is not logged in
+    if "admin" not in request.session:
+        return HttpResponseRedirect(reverse("adminlogin"))
+    message = getSessionMessage(request)
+    # main code
+    c = connection.cursor()
+    q = f"SELECT NAME, USERID, EMAIL FROM MEMBERUSER"
+    c.execute(q)
+    memberusers = c.fetchall()
+    return render(request, "library/adminalluser.html", {
+        "users": memberusers,
+        "message": message
+    })
+
+
+
+# ADMIN USER AUTHENTICATION
 
 def adminlogin(request):
-    # get request.session["admin"]
+    initialiseEmptyMessage(request)
+    # if the member user is logged in
+    if "userid" in request.session:
+        request.session["message"] = "Please log out and sign in as an administrator."
+        return HttpResponseRedirect(reverse("index"))
+    # if the admin user is logged in
+    if "admin" in request.session:
+        return HttpResponseRedirect(reverse("adminhome"))
     if request.method == "POST":
         # get current userid and password
-        id = request.POST["id"]
+        adminid = request.POST["adminid"]
         password = request.POST["password"]
         # get all userids from the database
         c = connection.cursor()
         q = f"SELECT USERID FROM ADMINUSER"
         c.execute(q)
-        ids = c.fetchall()
+        adminids = c.fetchall()
         # get all passwords from the database
         q = f"SELECT PASSWORD FROM ADMINUSER"
         c.execute(q)
         passwords = c.fetchall()
-        print(ids)
-        print(passwords)
-        print(id)
-        print(password)
         # if userid and password are correct
-        if ((id,) in ids) and ((password,) in passwords):
-            request.session["admin"] = [id]
-            return render(request, "library/temp.html")
+        if ((adminid,) in adminids) and ((password,) in passwords):
+            request.session["admin"] = [adminid]
+            return HttpResponseRedirect(reverse("adminhome"))
         else:
             # if userid exist but no password
-            if ((id,) in ids) and (password is None):
+            if ((adminid,) in adminids) and (password is None):
                 message = "Please input the password."
+                id = adminid
             # if userid exist but incorrect password
-            elif ((id,) in ids) and ((password,) not in passwords):
+            elif ((adminid,) in adminids) and ((password,) not in passwords):
                 message = "Incorrect password."
+                id = adminid
             # if userid does not exist
-            elif (id,) not in ids:
+            elif (adminid,) not in adminids:
                 message = "Admin ID does not exist."
                 id = ''
             return render(request, "library/adminlogin.html", {
                 "message": message,
                 "id": id
             })
+    # render empty login page
     return render(request, "library/adminlogin.html")
 
 def adminlogout(request):
-    del request.session["userid"]
-    return HttpResponseRedirect(reverse("login"))
+    if "admin" in request.session:
+        del request.session["admin"]
+    return HttpResponseRedirect(reverse("adminlogin"))
 
 
 
-# USER AUTHENTICATION
+# MEMBER USER AUTHENTICATION
 
 def register(request):
 
@@ -593,6 +650,9 @@ def register(request):
     # if logged in
     if "userid" in request.session:
         return HttpResponseRedirect(reverse("index"))
+    if "admin" in request.session:
+        request.session["message"] = "Please log out and register as a member user."
+        return HttpResponseRedirect(reverse("adminhome"))
     if request.method == "POST":
         # get current userid, name, email, and password
         userid = request.POST["userid"]
@@ -622,6 +682,10 @@ def login(request):
     # if logged in
     if "userid" in request.session:
         return HttpResponseRedirect(reverse("index"))
+    # if admin user is logged in
+    if "admin" in request.session:
+        request.session["message"] = "Please log out and sign in as a member user."
+        return HttpResponseRedirect(reverse("adminhome"))
     if request.method == "POST" and "userid" not in request.session:
         # get current userid and password
         userid = request.POST["userid"]
@@ -658,6 +722,7 @@ def login(request):
             })
     # render empty login page
     return render(request, "library/login.html")
+
 
 def logout(request):
     # clear userid from session
