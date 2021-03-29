@@ -1,0 +1,262 @@
+.body {
+  width: 100%;
+  height: 100%;
+  background-color: #e5e5e5;
+  margin: 0;
+}
+
+.white {
+  width: 100%;
+  height: 9.5vh;
+  background: #ffffff;
+  box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.library {
+  font-family: Raleway;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 32px;
+  background: linear-gradient(90deg, #63e6c6, #13366d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  width: fit-content;
+  margin-bottom: 1vh;
+  margin-left: 2vw;
+}
+
+.menu {
+  display: flex;
+  flex-direction: row;
+  width: 21vw;
+  justify-content: space-between;
+  padding-right: 2vw;
+}
+
+.bar {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  /* identical to box height */
+}
+
+.color {
+  color: #65e4c6;
+}
+
+.color2 {
+  color: black;
+  text-decoration: none;
+}
+
+.main {
+  width: 80vw;
+  height: fit-content;
+  display: flex;
+  flex-direction: row;
+  margin-top: 2vh;
+  margin-right: auto;
+  margin-left: auto;
+  justify-content: space-between;
+}
+
+.left {
+  width: 48.5vw;
+  height: fit-content;
+  background-color: white;
+  box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+}
+
+.right {
+  width: 30vw;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+}
+
+.summary {
+  background-color: white;
+  height: fit-content;
+  padding-bottom: 3vh;
+}
+
+.checkout {
+  width: 30vw;
+  height: 5vh;
+  margin-top: 2vh;
+  align-items: center;
+  text-align: center;
+  background-color: #12366f;
+  box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+  /* identical to box height */
+
+  color: #ffffff;
+  display: grid;
+}
+
+.title {
+  font-family: Raleway;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 28px;
+
+  color: #000000;
+  margin-top: 2vh;
+  margin-left: 2vw;
+  margin-bottom: 2vh;
+}
+
+.field {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 21px;
+  /* identical to box height */
+  text-align: left;
+  color: #000000;
+}
+
+.column {
+  margin-bottom: 2vh;
+  display: flex;
+  flex-direction: row;
+  width: 44.5vw;
+  margin-left: 2vw;
+  justify-content: space-between;
+}
+
+.input_default {
+  width: 29vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+  font-size: 12px;
+  font-family: Roboto;
+  margin-top: 0.5vh;
+  text-indent: 0.5vw;
+}
+
+.input_number {
+  width: 33vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+  font-size: 12px;
+  font-family: Roboto;
+  margin-top: 0.5vh;
+  text-indent: 0.5vw;
+}
+
+.input_date {
+  width: 6vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+  font-size: 12px;
+  font-family: Roboto;
+  margin-top: 0.5vh;
+  text-indent: 0.5vw;
+}
+
+.input_cvv {
+  width: 10vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+  font-size: 12px;
+  font-family: Roboto;
+  margin-top: 0.5vh;
+  text-indent: 0.5vw;
+}
+
+.input_billing {
+  width: 14vw;
+  border: 1px solid #e5e5e5;
+  box-sizing: border-box;
+  border-radius: 5px;
+  height: 4vh;
+  font-size: 12px;
+  font-family: Roboto;
+  margin-top: 0.5vh;
+  text-indent: 0.5vw;
+}
+
+.column_payment {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 26vw;
+  margin-left: 2vw;
+  margin-bottom: 1vh;
+}
+
+.text {
+  font-family: Roboto;
+  font-size: 12px;
+  color: black;
+}
+
+.group {
+  margin-top: 2vh;
+}
+
+.line {
+  width: 26vw;
+  height: 0.2vh;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #e5e5e5;
+  margin-top: 2vh;
+  margin-bottom: 2vh;
+}
+
+.flex {
+  display: flex;
+  flex-direction: row;
+  width: 14vw;
+  justify-content: space-between;
+  font-family: Roboto;
+  font-size: 12px;
+  color: black;
+  align-items: center;
+}
+
+.margin {
+  margin-left: 2vw;
+  width: fit-content;
+}
+
+.card {
+  font-family: Roboto;
+  font-size: 12px;
+  color: black;
+  margin-top: -1.5vh;
+  margin-left: 2vw;
+  margin-bottom: 3.5vh;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+}
+
+.image {
+  height: 2.5vh;
+  margin-left: 1vw;
+}
