@@ -83,7 +83,7 @@
 
 .borrow {
   width: 47vw;
-  height: 35.8vh;
+  height: 38.8vh;
   background-color: white;
   box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
 }
@@ -99,32 +99,41 @@
   width: fit-content;
   margin-top: 2vh;
   margin-left: 2vw;
+  margin-bottom: 1vh;
 }
 
-.scroll_borrow {
+/* .scroll_borrow {
   height: 25.8vh;
   overflow: scroll;
   overflow-x: hidden;
   margin-right: 2vw;
   overflow-y: visible;
   margin-top: 2vh;
-}
+} */
 
 .outstanding {
   width: 47vw;
-  height: 45.5vh;
+  height: 42.5vh;
   background-color: white;
   box-shadow: 0px 5px 8px 9px rgba(0, 0, 0, 0.01);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.scroll_outstanding {
+.in_outstanding {
+  display: flex;
+  flex-direction: column;
+}
+
+/* .scroll_outstanding {
   height: 37.5vh;
   overflow: scroll;
   overflow-x: hidden;
   margin-right: 2vw;
   overflow-y: visible;
   margin-top: 2vh;
-}
+} */
 
 .scroll_reserved {
   height: 74vh;
@@ -178,10 +187,12 @@
 .center {
   margin-left: auto;
   margin-right: auto;
-  width: fit-content;
+  width: 43vw;
   display: flex;
   flex-direction: row;
-  margin-top: 2vh;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5vh;
 }
 
 table {
@@ -225,7 +236,7 @@ th {
   display: flex;
   flex-direction: row;
   align-items: center;
-  width: 10vw;
+  width: fit-content;
 }
 
 .checkmark {
@@ -295,9 +306,38 @@ th {
   transform: rotate(45deg);
 }
 
+.pay {
+  background: #13366e;
+  border-radius: 78px;
+
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 8px;
+  line-height: 21px;
+
+  text-align: center;
+  color: #ffffff;
+
+  border: none;
+  align-self: center;
+  width: 5.9vw;
+  margin-left: 3vw;
+}
+
 .total {
   font-family: Roboto;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2vh;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
 }
+
+/* .none {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  color: grey;
+  text-align: center;
+  margin-top: 8vh;
+} */

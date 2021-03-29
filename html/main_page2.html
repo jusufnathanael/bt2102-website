@@ -23,44 +23,62 @@
       <div class="in_main">
         <div class="borrow">
           <div class="title">Borrowed Books</div>
-          <div class="scroll_borrow">
-            <table>
-              <tr>
-                <th>Book ID</th>
-                <th>Book Title</th>
-                <th>Due Date</th>
-                <th># of Extensions (Max: 2)</th>
-              </tr>
-              <tr>
-                <td>Iona Tanan</td>
-                <td>BT2102</td>
-                <td>01/04/2021</td>
-                <td>0</td>
-              </tr>
-              <tr>
-                <td>Iona Tanan</td>
-                <td>BT2102</td>
-                <td>01/04/2021</td>
-                <td>0</td>
-              </tr>
-              <tr>
-                <td>Iona Tanan</td>
-                <td>BT2102</td>
-                <td>01/04/2021</td>
-                <td>0</td>
-              </tr>
-              <tr>
-                <td>Iona Tanan</td>
-                <td>BT2102</td>
-                <td>01/04/2021</td>
-                <td>0</td>
-              </tr>
-            </table>
-          </div>
+          <table>
+            <tr>
+              <th>Book ID</th>
+              <th>Book Title</th>
+              <th>Due Date</th>
+              <th># of Extensions (Max: 2)</th>
+            </tr>
+            <tr>
+              <td>Iona Tanan</td>
+              <td>BT2102</td>
+              <td>01/04/2021</td>
+              <td>
+                <div class="combine">
+                  0
+                  <div class="pay">Extend</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Iona Tanan</td>
+              <td>BT2102</td>
+              <td>01/04/2021</td>
+              <td>
+                <div class="combine">
+                  0
+                  <div class="pay">Extend</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Iona Tanan</td>
+              <td>BT2102</td>
+              <td>01/04/2021</td>
+              <td>
+                <div class="combine">
+                  0
+                  <div class="pay">Extend</div>
+                </div>
+              </td>
+            </tr>
+            <!-- <tr>
+              <td>Iona Tanan</td>
+              <td>BT2102</td>
+              <td>01/04/2021</td>
+              <td>
+                <div class="combine">
+                  0
+                  <div class="pay">Extend</div>
+                </div>
+              </td>
+            </tr> -->
+          </table>
         </div>
         <div class="outstanding">
-          <div class="title">Unpaid Fines</div>
-          <div class="scroll_outstanding">
+          <div>
+            <div class="title">Unpaid Fines</div>
             <table>
               <tr>
                 <th></th>
@@ -69,7 +87,7 @@
                 <th>Actual Due Date</th>
                 <th>Unpaid Fine ($)</th>
               </tr>
-              <tr>
+              <!-- <tr>
                 <td>
                   <label class="container">
                     <input type="checkbox" />
@@ -80,7 +98,7 @@
                 <td>BT2102</td>
                 <td>01/04/2021</td>
                 <td>2</td>
-              </tr>
+              </tr> -->
               <tr>
                 <td>
                   <label class="container">
@@ -118,8 +136,10 @@
                 <td>2</td>
               </tr>
             </table>
-            <div class="total">Total Fee:</div>
-            <div class="center">
+          </div>
+          <div class="center">
+            <div class="total">Total Fee: $8</div>
+            <div class="combine">
               <div class="pay2">Calculate</div>
               <div class="pay2">Pay</div>
             </div>
@@ -138,9 +158,15 @@
             <tr>
               <td>Iona Tanan</td>
               <td>BT2102</td>
-              <td>01/04/2021</td>
+              <td>
+                <div class="combine">
+                  01/04/2021
+                  <div class="pay">Cancel</div>
+                </div>
+              </td>
             </tr>
           </table>
+          <!-- <div class="none">There's nothing here. You're good to go!</div> -->
         </div>
       </div>
     </div>
