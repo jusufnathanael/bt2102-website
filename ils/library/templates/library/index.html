@@ -65,9 +65,9 @@
                 </a>
                 {% elif book.11 == "RESERVED" %}
                 <div class="status">
-                    STATUS: {{ book.11 }}
+                    STATUS: {{ book.11 }}<br>
                     {% if book.12 %}
-                    EXPECTED DUE DATE: {{ book.12 }}
+                    RESERVATION DUE DATE: {{ book.12 }}
                     {% endif %}
                 </div>
                 {% else %}

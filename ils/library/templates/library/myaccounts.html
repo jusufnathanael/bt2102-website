@@ -21,31 +21,52 @@
         <div class="in_main">
             <div class="borrow">
                 <div class="title">Borrowed Books</div>
-                <div class="scroll_borrow">
-                    <table>
-                        <tr>
-                            <th>Book ID</th>
-                            <th>Book Title</th>
-                            <th>Due Date</th>
-                            <th>No. of Extensions (Max: 2)</th>
-                        </tr>
-                        {% for borrow in borrows %}
-                        <tr>
-                            <td>{{ borrow.0 }}</td>
-                            <td>{{ borrow.1 }}</td>
-                            <td>{{ borrow.2 }}</td>
-                            <td>{{ borrow.3 }} <a href="{% url 'extend' borrow.0 %}">EXTEND</a></td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                </div>
+                <table>
+                    <tr>
+                        <th>
+                            <div class="overflowbookid">Book ID</div>
+                        </th>
+                        <th>Book Title</th>
+                        <th>Due Date</th>
+                        <th>
+                            <div class="overflowextension">
+                                No. of Extensions (Max: 2)
+                            </div>
+                        </th>
+                    </tr>
+                    {% for borrow in borrows %}
+                    <tr>
+                        <td>{{ borrow.0 }}</td>
+                        <td>
+                            <div class="overflowtitle">{{ borrow.1 }}</div>
+                        </td>
+                        <td>
+                            <div class="overflowdate">
+                                {{ borrow.2 }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="combine">
+                                {{ borrow.3 }}
+                                <a href="{% url 'extend' borrow.0 %}">
+                                    <div class="pay">Extend</div>
+                                </a>
+                                <a href="{% url 'restore' borrow.0 %}">
+                                    <div class="pay">Return</div>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
             </div>
 
-            <div class="outstanding">
-                <div class="title">Unpaid Fines</div>
-                <div class="scroll_outstanding">
-                    <form method="POST" action="{% url 'myaccount' %}">
-                        {% csrf_token %}
+            <form method="POST" action="{% url 'myaccount' %}">
+                <div class="outstanding">
+
+                    {% csrf_token %}
+                    <div>
+                        <div class="title">Unpaid Fines</div>
                         <table>
                             <tr>
                                 <th></th>
@@ -72,16 +93,22 @@
                             </tr>
                             {% endfor %}
                         </table>
-                        {% if outstandings %}
-                        <div class="total">Total Fee: {{ total }}</div>
-                        <div class="center">
-                            <input class="pay" type="submit" name="button" value="Calculate"></input>
-                            <input class="pay" type="submit" name="button" value="Pay"></input>
+                    </div>
+                    {% if outstandings %}
+                    <div class="center">
+                        <div class="total">
+                            Total Fee:
+                            {% if total %}${{ total }}
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </form>
+                        <div class="combine">
+                            <input class="pay2" type="submit" name="button" value="Calculate"></input>
+                            <input class="pay2" type="submit" name="button" value="Pay"></input>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
+            </form>
         </div>
 
         <div class="left">
@@ -91,17 +118,32 @@
                     <tr>
                         <th>Book ID</th>
                         <th>Book Title</th>
-                        <th>Expected Due Date</th>
+                        <th>Reservation Due Date</th>
+                        <th>Expected Available Date</th>
+                        <th></th>
                     </tr>
                     {% for reserve in reserves %}
                     <tr>
                         <td>{{ reserve.0 }}</td>
                         <td>{{ reserve.1 }}</td>
-                        {% if reserve.2 == None %}
-                        <td>--</td>
-                        {% else %}
-                        <td>{{ reserve.2 }}</td>
-                        {% endif %}
+                        <td>
+                            {% if reserve.2 == None %}--
+                            {% else %}{{ reserve.2 }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if reserve.3 == None %}
+                            <a href="{% url 'borrow' reserve.0 %}">
+                                <div class="pay">Borrow</div>
+                            </a>
+                            {% else %}{{ reserve.3 }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'cancel' reserve.0 %}">
+                                <div class="pay">Cancel</div>
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </table>

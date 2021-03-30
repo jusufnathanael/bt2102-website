@@ -4,8 +4,9 @@ from django.db import connection
 from datetime import date, timedelta, datetime
 import pymongo, re
 
-from .helper import initialiseEmptyMessage, getSessionMessage
-from .helper import getCategories, formatBook, initialiseEmptyMessage, getDueDates
+from .helper import checkUnpaidFines, initialiseEmptyMessage, getSessionMessage
+from .helper import getSearchResult, getCategories, formatBook, getBookIDs, convertToInteger
+from .helper import getDueDate, getDueDatesForIndex, getDueDatesForSearch
 
 # TODO: add validation to the main functionality below
 
@@ -17,6 +18,10 @@ def index(request):
     # todo...
     message = getSessionMessage(request)    
     
+    userid = request.session["userid"][0]
+    checkUnpaidFines(userid)
+
+
     # get all books from MongoDB
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
     mydb = myclient['books']
@@ -25,13 +30,14 @@ def index(request):
 
     # get book ids and availabilities
     c = connection.cursor()
-    q = "SELECT BOOKID, AVAILABILITY FROM BOOKTEST"
+    q = "SELECT BOOKID, AVAILABILITY FROM BOOK"
     c.execute(q)
     booksall = c.fetchall()
     # get due dates
-    duedates = getDueDates(booksall)
+    duedates = getDueDatesForIndex(booksall)
     # format books
-    books = formatBook(m, booksall, duedates)
+    books = formatBook(m, booksall, [], duedates, 0)
+    print(books[10])
     # get all categories
     allcategories = getCategories(mycol)
     
@@ -46,56 +52,45 @@ def search(request):
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
         return HttpResponseRedirect(reverse("index"))
+
+    userid = request.session["userid"][0]
+    checkUnpaidFines(userid)
+    
     # get search inputs
     title = request.GET["qt"]
     author = request.GET["qa"]
     categories = request.GET.getlist("qc")
     year = request.GET["qy"]
-    # format input categories
-    result_categories = []
-    for cat in categories:
-        result_categories += [f"[\'{cat}\']"]
 
-    # connect to MongoDB
+    # format input categories
+    string_categories = ""
+    for category in categories:
+        string_categories += category + "|"
+    string_categories = string_categories[:-1]
+
+    # connect to MongoDB and get search results
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
     mydb = myclient['books']
     mycol = mydb['libbooks']
-    # if the user selects some categories
-    if result_categories:
-        search = mycol.aggregate([\
-            {"$match": {"$and": [\
-                {"title": {"$regex": title,"$options": "i"},\
-                "authors": {"$regex": author, "$options": "i"},\
-                "categories": {"$in": result_categories},\
-                "publishedDate": {"$regex": year, "$options": "i"}\
-                }
-            ]}},
-        ])
-    # if no category selected
-    else:
-        search = mycol.aggregate([\
-            {"$match": {"$and": [\
-                {"title": {"$regex": title,"$options": "i"},\
-                "authors": {"$regex": author, "$options": "i"},\
-                "publishedDate": {"$regex": year, "$options": "i"}\
-                }
-            ]}},
-        ])
+    search = getSearchResult(mycol, title, author, string_categories, year)
     
     # get book ids and availabilities
     c = connection.cursor()
-    q = "SELECT BOOKID, AVAILABILITY FROM BOOKTEST"
+    q = "SELECT BOOKID, AVAILABILITY FROM BOOK"
     c.execute(q)
     booksall = c.fetchall()
+    # get book IDs
+    bookids = getBookIDs(search)
     # get due dates
-    duedates = getDueDates(booksall)
+    duedates = getDueDatesForSearch(booksall, bookids)
     # format books
-    books = formatBook(search, booksall, duedates)
+    search = getSearchResult(mycol, title, author, string_categories, year)
+    books = formatBook(search, booksall, bookids, duedates, 1)
     # get all categories
     allcategories = getCategories(mycol)
 
     return render(request, "library/index.html", {
-        "booksmongo": books,
+        "books": books,
         "allcategories": allcategories,
         "title": title, "categories": categories,
         "year": year, "author": author
@@ -103,6 +98,10 @@ def search(request):
 
 
 def details(request, bookid):
+
+    userid = request.session["userid"][0]
+    checkUnpaidFines(userid)
+
     c = connection.cursor()
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
@@ -125,13 +124,13 @@ def details(request, bookid):
     book[10] = book[10].strip('\'][\'').split('\', \'') # categories
     
     c = connection.cursor()
-    q = f"SELECT BOOKID, AVAILABILITY FROM BOOKTEST WHERE BOOKID = {bookid}"
+    q = f"SELECT BOOKID, AVAILABILITY FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
-    result = c.fetchall()
+    result = c.fetchone()
     # get due dates
-    duedate = getDueDates(result)
+    duedate = getDueDate(result)
     # insert availability and due date to book
-    book += [result[0][1]]
+    book += [result[1]]
     book += duedate
     # get all categories
     allcategories = getCategories(mycol)
@@ -146,11 +145,53 @@ def details(request, bookid):
 
 def myaccount(request):
 
+    def getParams(request):
+        params = ["name_card", "month", "year", "card_no", "cvv", "name_address",
+                  "country", "address", "postcode", "blok", "unit"]
+        result = []
+        for param in params:
+            result += [request.POST[param]]
+        return result
+
+    def returnParams(request, details, records, total, ids, message):
+        return render(request, "library/pay.html", {
+            "name_card": details[0], "month": details[1], "year": details[2],
+            "card_no": details[3], "cvv": details[4], "name_address": details[5],
+            "country": details[6], "address": details[7], "postcode": details[8],
+            "blok": details[9], "unit": details[10], "message": message,
+            "outstandings": records, "total": total, "bookids": ids
+        })
+
     def payment(request, borrows, reserves, outstandings):
         button = request.POST["button"]
-        # if payment is successfull
-        if button == "success":
+        
+        # if the user wants to check out
+        if button == "CHECK OUT":
+            details = getParams(request)
+            bookids = request.POST.getlist("ids")
+            bookids = convertToInteger(bookids)
+            # if there are missing fileds except block and unit
+            i = 0
+            for detail in details:
+                if i is not 9 and i is not 10 and detail is "":
+                    total = request.POST["total"]
+                    message = "Please fill in the missing fields."
+                    return returnParams(request, details, outstandings, total, bookids, message)
+                i += 1
+            # if the payment is successful
+            if len(bookids) == 1:
+                q_delete = f"DELETE FROM BORROWS WHERE BOOKID = {bookids[0]}"
+                q_update = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookids[0]}"
+            else:
+                q_delete = f"DELETE FROM BORROWS WHERE BOOKID IN {tuple(bookids)}"
+                q_update = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID IN {tuple(bookids)}"
+            # update the database
+            c = connection.cursor()
+            c.execute(q_delete)
+            c.execute(q_update)
+            request.session["message"] = "Payment successful."
             return HttpResponseRedirect(reverse("myaccount"))
+        
         # get selected bookids
         if "bookids" not in request.POST:
             return render(request, "library/myaccounts.html", {
@@ -174,7 +215,9 @@ def myaccount(request):
         # if the user wants to pay
         if button == "Pay":
             return render(request, "library/pay.html", {
-                "total": sum
+                "total": sum,
+                "outstandings": outstandings,
+                "bookids": bookids
             })
 
     if "userid" not in request.session:
@@ -183,20 +226,21 @@ def myaccount(request):
             return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     # get system messages
-    message = ""
-    if request.session["message"]:
-        message = request.session["message"]
-        request.session["message"] = []
+    message = getSessionMessage(request)
     # get the borrow records
     userid = request.session["userid"][0]
+    # if the user has unpaid fines, clear all reservations
+    checkUnpaidFines(userid)
     c = connection.cursor()
     q = f"SELECT BOOKID, TITLE, DUEDATE, EXTENSION FROM "\
         f"BORROWS NATURAL JOIN BOOK WHERE USERID = '{userid}'"
     c.execute(q)
     borrows = c.fetchall()
     # get the reserve records
-    q = f"SELECT BOOKID, TITLE, DUEDATE FROM RESERVES "\
-        f"NATURAL JOIN BOOK WHERE USERID = '{userid}'"
+    q = f"WITH T AS (SELECT BOOKID AS TBOOKID, TITLE, DUEDATE AS RESERVEDATE "\
+        f"FROM RESERVES NATURAL JOIN BOOK WHERE USERID = '{userid}') "\
+        f"SELECT TBOOKID, TITLE, RESERVEDATE, DUEDATE AS BORROWDATE "\
+        f"FROM T LEFT JOIN BORROWS ON BOOKID = TBOOKID"
     c.execute(q)
     reserves = c.fetchall()
     # get outstanding fees records
@@ -223,23 +267,36 @@ def borrow(request, bookid):
             request.session["message"] = "Please log out and sign in as a member user."
             return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
+    userid = request.session["userid"][0]
     c = connection.cursor()
+    # if the user has unpaid fines
+    if checkUnpaidFines(userid):
+        request.session["message"] = "You need to pay for the outstanding fees first."
+        return HttpResponseRedirect(reverse("myaccount"))
     # select current book
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
     c.execute(q)
     book = c.fetchone()
+    # check if the user is reserving the book
+    q = f"SELECT USERID FROM RESERVES WHERE BOOKID = {bookid}"
+    c.execute(q)
+    reserve = c.fetchone()
+    # check if another user is borrowing the book
+    q = f"SELECT USERID FROM BORROWS WHERE BOOKID = {bookid}"
+    c.execute(q)
+    borrow = c.fetchone()
     # if book does not exist
     if not book:
         message = "Book does not exist."
-    # if book is available (not borrowed or reserved)
-    elif list(book)[2] == "AVAILABLE":
+    # if book is available (not borrowed or reserved) or the reserving user can now borrow the book
+    elif list(book)[2] == "AVAILABLE" or (reserve and not borrow):
         # check if the user has reached the borrowing limit
-        userid = request.session["userid"][0]
         q = f"SELECT COUNT(*) FROM BORROWS GROUP BY USERID HAVING USERID = '{userid}'"
         c.execute(q)
         number = c.fetchone()
         if number and list(number)[0] >= 4:
             message = "You have reached your borrowing limit (max. 4 books)."
+            
         else:
             # insert into the record and update the book status
             duedate = date.today() + timedelta(days=27)
@@ -248,6 +305,9 @@ def borrow(request, bookid):
             c.execute(q)
             q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
             c.execute(q)
+            if reserve and not borrow:
+                q = f"DELETE FROM RESERVES WHERE BOOKID = {bookid}"
+                c.execute(q)
             message = "You have successfully borrowed the book."
     else:
         message = "Book is unavailable."
@@ -281,24 +341,24 @@ def extend(request, bookid):
         q = f"SELECT USERID FROM RESERVES WHERE BOOKID = {bookid}"
         c.execute(q)
         reservation = c.fetchone()
-        if not record:
+        if not record:    
             message = "You are not borrowing this book."
+        elif checkUnpaidFines(userid):
+            request.session["message"] = "You need to pay for the outstanding fees first."
+            return HttpResponseRedirect(reverse("myaccount"))
         elif reservation:
-            message = "There is another user reserving the book." 
-        elif date.today() > list(record)[2]:
-            message = "You have an outstanding fine. Please proceed to the payment before extending the book."
+            message = "There is another user reserving the book."
         elif list(record)[3] >= 2:
             message = "You have reached the extension limit. Please return the book first before further extension."
         elif (list(record)[2] - date.today()).days > 7:
-            message = "You can extend the book at least 1 week in advance."
+            message = "You can extend the book at most 1 week in advance."
         # if the extension is succesfull:
         else:
             extension = list(record)[3] + 1
-            print(extension)
             duedate = (list(record)[2] + timedelta(days=28)).strftime("%Y-%m-%d")
             q = f"UPDATE BORROWS SET EXTENSION = {extension}, DUEDATE = '{duedate}' WHERE BOOKID = {bookid} and USERID = '{userid}'"
             c.execute(q)
-            message = "Extension is successfull."
+            message = "Extension is successful."
     request.session["message"] = message
     return HttpResponseRedirect(reverse("myaccount"))
 
@@ -326,14 +386,18 @@ def reserve(request, bookid):
         borrowUser = c.fetchone()
         userid = request.session["userid"][0]
         if (userid,) == borrowUser:
-            message = "You have borrowed this book."
-        # if the reservation is successfull
-        else: 
-            q = f"INSERT INTO RESERVES VALUES ({bookid}, '{userid}', NULL)"
-            c.execute(q)
-            q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
-            c.execute(q)
-            message = "You have succesfully reserved the book."
+            request.session["message"] = "You have borrowed this book."
+            return HttpResponseRedirect(reverse("myaccount"))
+        # if the user has unpaid fines
+        if checkUnpaidFines(userid):
+            request.session["message"] = "You need to pay for the outstanding fees first."
+            return HttpResponseRedirect(reverse("myaccount"))
+        # if the reservation is successful
+        q = f"INSERT INTO RESERVES VALUES ({bookid}, '{userid}', NULL)"
+        c.execute(q)
+        q = f"UPDATE BOOK SET AVAILABILITY = 'RESERVED' WHERE BOOKID = {bookid}"
+        c.execute(q)
+        message = "You have succesfully reserved the book."
     # if the book is available to borrow
     elif list(book)[2] == "AVAILABLE":
         message = "Book is available, please go ahead to borrow the book."
@@ -352,6 +416,10 @@ def cancel(request, bookid):
             return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
     userid = request.session["userid"][0]
+    # if the user has unpaid fines
+    if checkUnpaidFines(userid):
+        request.session["message"] = "You need to pay for the outstanding fees first."
+        return HttpResponseRedirect(reverse("myaccount"))
     # select current book
     c = connection.cursor()
     q = f"SELECT * FROM BOOK WHERE BOOKID = {bookid}"
@@ -369,9 +437,15 @@ def cancel(request, bookid):
         if (userid,) == reserveUser:
             q = f"DELETE FROM RESERVES WHERE BOOKID = {bookid} AND USERID = '{userid}'"
             c.execute(q)
-            if list(book)[2] == "RESERVED":
+            # check if the book is borrowed
+            q = f"SELECT BOOKID FROM BORROWS WHERE BOOKID = {bookid}"
+            c.execute(q)
+            result = c.fetchone()
+            if result:
+                q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {bookid}"
+            else :
                 q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
-                c.execute(q)
+            c.execute(q)
             message = "You have successfully cancel the reservation."
         else:
             message = "You have not reserved this book yet."
@@ -405,17 +479,16 @@ def restore(request, bookid):
         request.session["message"] = f"You are not borrowing the book {book[1]}."
         return HttpResponseRedirect(reverse("myaccount"))
     # check for fines
+    checkUnpaidFines(userid)
     bookid, userid, duedate, extension = borrowRecord
-    # if the user needs to pay for fine
-    if date.today() > duedate:
-        fine = (date.today() - duedate).days
-        request.session["message"] = f"You need to pay for the outstanding fees first."
-        # delete all reservations
-        q = f"DELETE FROM RESERVES WHERE USERID = {userid}"
-        c.execute(q)
-        return render(request, "library/payment.html", {
-            "fine": fine
-        })
+    # if the book is overdue
+    q = f"SELECT DUEDATE FROM BORROWS WHERE USERID = '{userid}' AND BOOKID = {bookid}"
+    c.execute(q)
+    duedate = c.fetchone()
+    if date.today() > duedate[0]:
+        # if the book has unpaid fines, delete all reservations
+        request.session["message"] = "You need to pay for the outstanding fees first."
+        return HttpResponseRedirect(reverse("myaccount"))
     # book returned successfully
     q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
     c.execute(q)
@@ -604,24 +677,25 @@ def register(request):
     def isValid(userid, name, email, password):
         # get all userids and emails from the database
         c = connection.cursor()
-        q = f"SELECT USERID FROM MEMBERUSER"
+        q = f"SELECT USERID FROM MEMBERUSER WHERE USERID = '{userid}'"
         c.execute(q)
         userids = c.fetchall()
-        q = f"SELECT EMAIL FROM MEMBERUSER"
+        q = f"SELECT EMAIL FROM MEMBERUSER WHERE EMAIL = '{email}'"
         c.execute(q)
         emails = c.fetchall()
         # values must be non-NULL and (userid, email) needs to be unique
-        if (userid,) not in userids and (email,) not in emails and userid and name and email and password:
+        if not userids and not emails and userid and name and email and password\
+            and re.match("^[a-zA-Z0-9][a-zA-Z0-9._-]*@[a-zA-Z0-9][a-zA-Z0-9._-]*\.[a-zA-Z]{2,4}$", email):
             return True
         return False
     
     def getInvalidMessages(userid, name, email, password):
         # get all userids and emails from the database
         c = connection.cursor()
-        q = f"SELECT USERID FROM MEMBERUSER"
+        q = f"SELECT USERID FROM MEMBERUSER WHERE USERID = '{userid}'"
         c.execute(q)
         userids = c.fetchall()
-        q = f"SELECT EMAIL FROM MEMBERUSER"
+        q = f"SELECT EMAIL FROM MEMBERUSER WHERE EMAIL = '{email}'"
         c.execute(q)
         emails = c.fetchall()
         messages = []
@@ -635,13 +709,13 @@ def register(request):
         if not password:
             messages += ["Please input a password."]
         # userid and email must be unique
-        if (userid,) in userids:
+        if userids:
             messages += ["This User ID has been registered."]
             userid = ""
         if email and not re.match("^[a-zA-Z0-9][a-zA-Z0-9._-]*@[a-zA-Z0-9][a-zA-Z0-9._-]*\.[a-zA-Z]{2,4}$", email):
             messages += ["Invalid email address."]
             email = ""
-        elif (email,) in emails:
+        if emails:
             messages += ["This email address has been registered."]
             email = ""
         return (messages, userid, email)
@@ -659,7 +733,7 @@ def register(request):
         name = request.POST["name"]
         email = request.POST["email"]
         password = request.POST["password"]
-        # if the registration is successfull
+        # if the registration is successful
         if isValid(userid, name, email, password):
             c = connection.cursor()
             value = (userid, name, email, password)

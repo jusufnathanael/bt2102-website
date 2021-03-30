@@ -28,8 +28,8 @@ CREATE TABLE `AdminUser` (
 DROP TABLE IF EXISTS `book`;
 CREATE TABLE `book` (
   `bookID` int(4) NOT NULL,
-  `title` varchar(50) NOT NULL,
-  `availability` varchar(12) CONSTRAINT availType CHECK (availability IN ('AVAILABLE', 'BORROWED', 'RESERVED', 'UNAVAILABLE')),
+  `title` VARCHAR(62) NOT NULL,
+  `availability` VARCHAR(12) CHECK (availability IN ('AVAILABLE', 'BORROWED', 'RESERVED', 'UNAVAILABLE')),
   PRIMARY KEY (`bookID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

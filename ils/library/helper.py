@@ -1,5 +1,5 @@
 from django.db import connection
-from datetime import datetime
+from datetime import datetime, date
 import re
 
 def initialiseEmptyMessage(request):
@@ -13,26 +13,90 @@ def getSessionMessage(request):
         request.session["message"] = []
     return message
 
-def getDueDates(books):
-    duedates = []
+def getSearchResult(mycol, title, author, categories, year):
+    return mycol.aggregate([\
+        {"$match": {"$and": [\
+            {"title": {"$regex": title,"$options": "i"},\
+            "authors": {"$regex": author, "$options": "i"},\
+            "categories": {"$regex": categories},\
+            "publishedDate": {"$regex": year, "$options": "i"}\
+            }
+        ]}},
+    ])
+
+def checkUnpaidFines(userid):
+    # if the user has unpaid fines
     c = connection.cursor()
+    q = f"SELECT DUEDATE FROM BORROWS WHERE USERID = '{userid}'"
+    c.execute(q)
+    duedates = c.fetchall()
+    for duedate in duedates:
+        if date.today() > duedate[0]:
+            # get the bookIDs to change to borrow
+            q = f"SELECT R.BOOKID FROM reserves r LEFT JOIN BORROWS b "\
+                f"on r.bookID = b.bookID where b.userid IS NOT NULL and r.userid = '{userid}'"
+            c.execute(q)
+            results = c.fetchall()
+            print(results)
+            if results and len(results) == 1:
+                q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {results[0][0]}"
+            elif len(results) > 1:
+                bookids = []
+                for id in results:
+                    bookids += [id[0]]
+                print(tuple(bookids))
+                q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID IN {tuple(bookids)}"
+            c.execute(q)
+            # get the bookIDs to change to available
+            q = f"SELECT R.BOOKID FROM reserves r LEFT JOIN BORROWS b "\
+                f"on r.bookID = b.bookID where b.userid IS NULL and r.userid = '{userid}'"
+            c.execute(q)
+            results = c.fetchall()
+            print(results)
+            if results and len(results) == 1:
+                q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {results[0][0]}"
+            elif len(results) > 1:
+                bookids = []
+                for id in results:
+                    bookids += [id[0]]
+                print(tuple(bookids))
+                q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID IN {tuple(bookids)}"
+            c.execute(q)
+            # delete all reservations
+            q = f"DELETE FROM RESERVES WHERE USERID = '{userid}'"
+            c.execute(q)
+            return True
+    return False
+
+def getDueDate(book):
+    c = connection.cursor()
+    # search due date in reserves table
+    if book[1] == "RESERVED":
+        q = f"SELECT DUEDATE FROM RESERVES WHERE BOOKID = {book[0]}"
+        c.execute(q)
+        res = c.fetchone()
+        if res: return [res[0]]
+        else: return [""]
+    # search due date in borrows table
+    if book[1] == "BORROWED":
+        q = f"SELECT DUEDATE FROM BORROWS WHERE BOOKID = {book[0]}"
+        c.execute(q)
+        res = c.fetchone()
+        if res: return [res[0]]
+        else: return [""]
+    return [""]
+
+def getDueDatesForIndex(books):
+    duedates = []
     for book in books:
-        # search due date in reserves table
-        if book[1] == "RESERVED":
-            q = f"SELECT DUEDATE FROM RESERVES WHERE BOOKID = {book[0]}"
-            c.execute(q)
-            res = c.fetchone()
-            if res: duedates += [res[0]]
-            else: duedates += [""]
-        # search due date in borrows table
-        elif book[1] == "BORROWED":
-            q = f"SELECT DUEDATE FROM BORROWS WHERE BOOKID = {book[0]}"
-            c.execute(q)
-            res = c.fetchone()
-            if res: duedates += [res[0]]
-            else: duedates += [""]
-        else:
-            duedates += [""]
+        duedates += getDueDate(book)
+    return duedates
+
+def getDueDatesForSearch(books, bookids):
+    duedates = []
+    for book in books:
+        if book[0] in bookids:
+            duedates += getDueDate(book)
     return duedates
 
 def getCategories(mycol):
@@ -47,7 +111,17 @@ def getCategories(mycol):
                 categories += [item]
     return sorted(categories)
 
-def formatBook(results, booksall, duedates):
+def getAvailability(booksall, bookids,type, i):
+    # search all books (from views.index)
+    if type == 0:
+        return booksall[i][1]
+    # search with filter (from views.search)
+    c = connection.cursor()
+    q = f"SELECT AVAILABILITY FROM BOOK WHERE BOOKID = {bookids[i]}"
+    c.execute(q)
+    return c.fetchone()[0]
+
+def formatBook(results, booksall, bookids, duedates, type):
     # format each book
     i = 0
     books = []
@@ -60,8 +134,22 @@ def formatBook(results, booksall, duedates):
         bookaslist[9] = bookaslist[9].strip('\'][\'').split('\', \'')
         bookaslist[10] = bookaslist[10].strip('\'][\'').split('\', \'')
         # add availabilities from mysql database
-        bookaslist += [booksall[i][1]]
+        bookaslist += [getAvailability(booksall, bookids, type, i)]
+        # add due dates from mysql database
         bookaslist += [duedates[i]]
         books += [bookaslist]
         i += 1
     return books
+
+def getBookIDs(results):
+    books = []
+    for book in list(results):
+        bookaslist = list(book.values())
+        books += [bookaslist[0]]
+    return books
+
+def convertToInteger(alist):
+    results = []
+    for item in alist:
+        results += [int(item)]
+    return results

@@ -1,5 +1,129 @@
-PAYLAH! {{total}}
+{% extends "library/layout.html" %}
 
+{% load static %}
+
+{% block head %}
+<link href="{% static 'library/payment.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block myaccount %}
+<div class="bar">
+    <a class="color" href="{% url 'myaccount' %}">My Account</a>
+</div>
+{% endblock %}
+
+{% block body %}
+
+<body>
+    <form method="POST" action="{% url 'myaccount' %}">
+        {% csrf_token %}
+        <div class="main">
+            <div class="left">
+                <div class="title">Payment Method</div>
+                <div class="card">Debit/Credit Card
+                    <img src="{% static 'library/visa.png' %}" class="image">
+                    <img src="{% static 'library/mastercard.png' %}" class="image">
+                    <img src="{% static 'library/nets.png' %}" class="image">
+                </div>
+                <div class="column">
+                    <div>
+                        <div class="field">Full Name</div>
+                        <input class="input_default" name="name_card" placeholder="Full Name" type="text"
+                            value="{{ name_card }}">
+                    </div>
+                    <div>
+                        <div class="field">Expiry Date</div>
+                        <div class="flex">
+                            <input class="input_date" name="month" placeholder="Month" type="text" value="{{ month }}">
+                            /
+                            <input class="input_date" name="year" placeholder="Year" type="text" value="{{ year }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div>
+                        <div class="field">Card Number</div>
+                        <input class="input_number" name="card_no" placeholder="Card Number" type="text"
+                            value="{{ card_no }}">
+                    </div>
+                    <div>
+                        <div class="field">CVV</div>
+                        <input class="input_cvv" name="cvv" placeholder="CVV" type="text">
+                    </div>
+
+                </div><br>
+                <div class="title">Billing Address</div>
+                <div class="column">
+                    <div>
+                        <div class="field">Full Name</div>
+                        <input class="input_default" name="name_address" placeholder="Full Name" type="text"
+                            value="{{ name_address }}">
+                    </div>
+                    <div>
+                        <div class="field">Country</div>
+                        <input class="input_billing" name="country" placeholder="Country" type="text"
+                            value="{{ country }}">
+                    </div>
+
+                </div>
+                <div class="column">
+                    <div>
+                        <div class="field">Address</div>
+                        <input class="input_default" name="address" placeholder="Address" type="text"
+                            value="{{ address }}">
+                    </div>
+                    <div>
+                        <div class="field">Postal Code</div>
+                        <input class="input_billing" name="postcode" placeholder="Postal Code" type="text"
+                            value="{{ postcode }}">
+                    </div>
+
+                </div>
+                <div class="margin">
+                    <div class="field">Block</div>
+                    <div class="flex">
+                        #
+                        <input class="input_date" name="blok" placeholder="Block" type="text" value="{{ blok }}">
+                        -
+                        <input class="input_date" name="unit" placeholder="Unit" type="text" value="{{ unit }}">
+                    </div>
+                </div>
+                <br>
+            </div>
+            <div class="right">
+                <div class="summary">
+                    <div class="title">Payment Summary</div>
+                    {% for record in outstandings %}
+                    <div class="group">
+                        {% if record.0 in bookids %}
+                        <div class="column_payment">
+                            <div class="text">{{ record.1 }}</div>
+                            <div class="text">{{ record.3 }}</div>
+                            <input type="hidden" name="ids" value="{{record.0}}">
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class=" line">
+                    </div>
+                    <div class="column_payment">
+                        <div class="text"><b>Total</b></div>
+                        <div class="text"><b>${{ total }}</div></b>
+                    </div>
+                </div>
+                <input type="hidden" name="total" value="{{ total }}">
+                <input class="checkout" type="submit" name="button" value="CHECK OUT">
+
+
+            </div>
+
+        </div>
+    </form>
+</body>
+
+{% comment %}
+
+PAYLAH! {{total}}
 <form method="POST" action="{% url 'myaccount' %}">
     {% csrf_token %}
     CREDIT CARD OR DEBIT CARD?<br>
@@ -7,3 +131,7 @@ PAYLAH! {{total}}
     <input type="text" name="test">
     <input type="submit" name="button" value="success"></input>
 </form>
+
+{% endcomment %}
+
+{% endblock %}

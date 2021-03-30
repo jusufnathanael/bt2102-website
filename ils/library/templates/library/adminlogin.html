@@ -16,7 +16,7 @@
         <div class="front">MY<br>LIBRARY</div>
         <div class="white1">
             <div class="in_white">
-                <div class="log_in">(ADMIN) Log In</div>
+                <div class="log_in">Admin Log In</div>
                 <form method="POST" action="{% url 'adminlogin' %}">
                     {% csrf_token %}
                     <div class="username">Username</div>
@@ -25,6 +25,7 @@
                     <input class="input" type="password" name="password"><br><br>
                     <button class="btn--submit" style="cursor:pointer" value="login">Log in</button>
                 </form>
+                <a class="sign_up" href="{% url 'login' %}">Sign In as Member</a>
             </div>
         </div>
     </div>

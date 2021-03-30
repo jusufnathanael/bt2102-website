@@ -1,14 +1,4 @@
-DROP TABLE IF EXISTS booktest;
-
-CREATE TABLE booktest (
-  `bookID` INT NOT NULL,
-  `title` VARCHAR(62) NOT NULL,
-  `availability` VARCHAR(12) CHECK (availability IN ('AVAILABLE', 'BORROWED', 'RESERVED', 'UNAVAILABLE')),
-  PRIMARY KEY (`bookID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-
-INSERT INTO booktest VALUES
+INSERT INTO `book` VALUES
     (1,'Unlocking Android','AVAILABLE'),
     (2,'Android in Action, Second Edition','AVAILABLE'),
     (3,'Specification by Example','AVAILABLE'),
@@ -259,7 +249,7 @@ INSERT INTO booktest VALUES
     (307,'JUnit in Action, Second Edition','AVAILABLE'),
     (308,'Bitter Java','AVAILABLE'),
     (309,'Bitter EJB','AVAILABLE');
-INSERT INTO booktest VALUES
+INSERT INTO `book` VALUES
     (310,'Spring Batch in Action','AVAILABLE'),
     (312,'JDK 1.4 Tutorial','AVAILABLE'),
     (313,'iPhone and iPad in Action','AVAILABLE'),
