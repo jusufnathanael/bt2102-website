@@ -136,8 +136,10 @@ def details(request, bookid):
     # format book into list
     book = list(list(book)[0].values())
     # format published date, categories, and authors
-    publisheddate = re.findall("([0-9]{4}-[0-9]{2}-[0-9]{2})", book[4])[0]
-    book[4] = datetime.strptime(publisheddate, "%Y-%m-%d").date() # published date
+    publisheddate = re.findall("([0-9]{4}-[0-9]{2}-[0-9]{2})", book[4])
+    if publisheddate:
+        publisheddate = publisheddate[0]
+        book[4] = datetime.strptime(publisheddate, "%Y-%m-%d").date() # published date
     book[9] = book[9].strip('\'][\'').split('\', \'') # authors
     book[10] = book[10].strip('\'][\'').split('\', \'') # categories
     
@@ -197,16 +199,19 @@ def myaccount(request):
                     return returnParams(request, details, outstandings, total, bookids, message)
                 i += 1
             # if the payment is successful
-            if len(bookids) == 1:
-                q_delete = f"DELETE FROM BORROWS WHERE BOOKID = {bookids[0]}"
-                q_update = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookids[0]}"
-            else:
-                q_delete = f"DELETE FROM BORROWS WHERE BOOKID IN {tuple(bookids)}"
-                q_update = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID IN {tuple(bookids)}"
-            # update the database
-            c = connection.cursor()
-            c.execute(q_delete)
-            c.execute(q_update)
+            for bookid in bookids:
+                q = f"SELECT AVAILABILITY FROM BOOK WHERE BOOKID = {bookid}"
+                c.execute(q)
+                availability = c.fetchone()
+                if availability[0] == "BORROWED":
+                    q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {bookid}"
+                    c.execute(q)
+                elif availability[0] == "RESERVED":
+                    today = (date.today() + timedelta(days=13)).strftime("%Y-%m-%d")
+                    q = f"UPDATE RESERVES SET DUEDATE = '{today}' WHERE BOOKID = {bookid}"
+                    c.execute(q)
+                q = f"DELETE FROM BORROWS WHERE BOOKID = {bookid}"
+                c.execute(q)
             request.session["message"] = "Payment successful."
             return HttpResponseRedirect(reverse("myaccount"))
         

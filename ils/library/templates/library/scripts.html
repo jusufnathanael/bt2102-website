@@ -9,13 +9,13 @@
             message += array[i] + "\n";
         }
         alert(message);
-    }, 50);
+    }, 100);
 </script>
 {% elif message %}
 <script>
     window.onload = setTimeout(function () {
         alert("{{ message }}");
-    }, 50);
+    }, 100);
 </script>
 {% endif %}
 

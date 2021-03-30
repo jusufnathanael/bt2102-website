@@ -148,9 +148,11 @@
                     <tr>
                         <td>{{ reserve.0 }}</td>
                         <td>
-                            <a style="text-decoration-color: #13366d;" href="{% url 'details' reserve.0 %}">
-                                {{ reserve.1 }}
-                            </a>
+                            <div style="width: 15vw">
+                                <a style="text-decoration-color: #13366d;" href="{% url 'details' reserve.0 %}">
+                                    {{ reserve.1 }}
+                                </a>
+                            </div>
                         </td>
                         <td>
                             {% if reserve.2 == None %}--

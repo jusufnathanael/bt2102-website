@@ -17,7 +17,9 @@
 
 <body class="body">
     <div class="white">
-        <div class="library">My Library</div>
+        <a style="text-decoration: none" href="{% url 'index' %}">
+            <div class="library">My Library</div>
+        </a>
         <div class="menu">
             {% block search %}
             <div class="bar">
