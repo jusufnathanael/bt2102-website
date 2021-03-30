@@ -121,17 +121,4 @@
     </form>
 </body>
 
-{% comment %}
-
-PAYLAH! {{total}}
-<form method="POST" action="{% url 'myaccount' %}">
-    {% csrf_token %}
-    CREDIT CARD OR DEBIT CARD?<br>
-    ENTER CREDENTIALS!
-    <input type="text" name="test">
-    <input type="submit" name="button" value="success"></input>
-</form>
-
-{% endcomment %}
-
 {% endblock %}

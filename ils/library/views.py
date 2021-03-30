@@ -8,19 +8,22 @@ from .helper import checkUnpaidFines, initialiseEmptyMessage, getSessionMessage
 from .helper import getSearchResult, getCategories, formatBook, getBookIDs, convertToInteger
 from .helper import getDueDate, getDueDatesForIndex, getDueDatesForSearch
 
-# TODO: add validation to the main functionality below
-
+def handler404(request, exception):
+    return render(request, 'library/404.html', {})
+    
 # MAIN FUNCTIONALITY
 
 def index(request):
     if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
         return HttpResponseRedirect(reverse("login"))
-    # todo...
-    message = getSessionMessage(request)    
+    # get system messages
+    message = getSessionMessage(request)
     
     userid = request.session["userid"][0]
     checkUnpaidFines(userid)
-
 
     # get all books from MongoDB
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
@@ -37,7 +40,6 @@ def index(request):
     duedates = getDueDatesForIndex(booksall)
     # format books
     books = formatBook(m, booksall, [], duedates, 0)
-    print(books[10])
     # get all categories
     allcategories = getCategories(mycol)
     
@@ -49,6 +51,14 @@ def index(request):
 
 
 def search(request):
+    if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
+        return HttpResponseRedirect(reverse("login"))
+    # get system messages
+    message = getSessionMessage(request)
+
     initialiseEmptyMessage(request)
     if "userid" not in request.session:
         return HttpResponseRedirect(reverse("index"))
@@ -93,11 +103,19 @@ def search(request):
         "books": books,
         "allcategories": allcategories,
         "title": title, "categories": categories,
-        "year": year, "author": author
+        "year": year, "author": author, "message": message
     })
 
 
 def details(request, bookid):
+
+    if "userid" not in request.session:
+        if "admin" in request.session:
+            request.session["message"] = "Please log out and sign in as a member user."
+            return HttpResponseRedirect(reverse("adminhome"))
+        return HttpResponseRedirect(reverse("login"))
+    # get system messages
+    message = getSessionMessage(request)
 
     userid = request.session["userid"][0]
     checkUnpaidFines(userid)
@@ -154,7 +172,7 @@ def myaccount(request):
         return result
 
     def returnParams(request, details, records, total, ids, message):
-        return render(request, "library/pay.html", {
+        return render(request, "library/payment.html", {
             "name_card": details[0], "month": details[1], "year": details[2],
             "card_no": details[3], "cvv": details[4], "name_address": details[5],
             "country": details[6], "address": details[7], "postcode": details[8],
@@ -194,7 +212,7 @@ def myaccount(request):
         
         # get selected bookids
         if "bookids" not in request.POST:
-            return render(request, "library/myaccounts.html", {
+            return render(request, "library/myaccount.html", {
                 "borrows": borrows, "reserves": reserves,
                 "outstandings": outstandings, "total": 0
             })
@@ -207,14 +225,14 @@ def myaccount(request):
                 sum += list(record)[3]
         # if the user wants to calculate the fines
         if button == "Calculate":
-            return render(request, "library/myaccounts.html", {
+            return render(request, "library/myaccount.html", {
                 "borrows": borrows, "reserves": reserves,
                 "outstandings": outstandings,
                 "total": sum, "bookids": bookids
             })
         # if the user wants to pay
         if button == "Pay":
-            return render(request, "library/pay.html", {
+            return render(request, "library/payment.html", {
                 "total": sum,
                 "outstandings": outstandings,
                 "bookids": bookids
@@ -252,7 +270,7 @@ def myaccount(request):
     # if the user press calculate or pay buttons
     if request.method == "POST":
         return payment(request, borrows, reserves, outstandings)
-    return render(request, "library/myaccounts.html", {
+    return render(request, "library/myaccount.html", {
         "message": message,
         "borrows": borrows,
         "reserves": reserves,

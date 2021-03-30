@@ -27,33 +27,35 @@
                             <div class="overflowbookid">Book ID</div>
                         </th>
                         <th>Book Title</th>
-                        <th>Due Date</th>
                         <th>
-                            <div class="overflowextension">
-                                No. of Extensions (Max: 2)
-                            </div>
+                            <div class="overflowdate">Due Date</div>
+                        </th>
+                        <th>
+                            <div class="overflowextension">No. of Extensions (Max: 2)</div>
                         </th>
                     </tr>
                     {% for borrow in borrows %}
                     <tr>
                         <td>{{ borrow.0 }}</td>
                         <td>
-                            <div class="overflowtitle">{{ borrow.1 }}</div>
+                            <div class="overflowtitle">
+                                <a href="{% url 'details' borrow.0 %}">{{ borrow.1 }}</a>
+                            </div>
                         </td>
                         <td>
-                            <div class="overflowdate">
-                                {{ borrow.2 }}
-                            </div>
+                            <div class="overflowdate">{{ borrow.2 }}</div>
                         </td>
                         <td>
                             <div class="combine">
                                 {{ borrow.3 }}
-                                <a href="{% url 'extend' borrow.0 %}">
-                                    <div class="pay">Extend</div>
-                                </a>
-                                <a href="{% url 'restore' borrow.0 %}">
-                                    <div class="pay">Return</div>
-                                </a>
+                                <div class="combine">
+                                    <a style="text-decoration-color: #13366d;" href="{% url 'extend' borrow.0 %}">
+                                        <div class="pay">Extend</div>
+                                    </a>
+                                    <a style="text-decoration-color: #13366d;" href="{% url 'restore' borrow.0 %}">
+                                        <div class="pay">Return</div>
+                                    </a>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -67,13 +69,20 @@
                     {% csrf_token %}
                     <div>
                         <div class="title">Unpaid Fines</div>
+                        {% if outstandings %}
                         <table>
                             <tr>
                                 <th></th>
-                                <th>Book ID</th>
+                                <th>
+                                    <div class="overflowbookid">Book ID</div>
+                                </th>
                                 <th>Book Title</th>
-                                <th>Actual Due Date</th>
-                                <th>Unpaid Fine ($)</th>
+                                <th>
+                                    <div class="overflowdate">Actual Due Date</div>
+                                </th>
+                                <th>
+                                    <div class="overflowdate">Unpaid Fine ($)</div>
+                                </th>
                             </tr>
                             {% for record in outstandings %} <tr>
                                 <td>
@@ -87,12 +96,23 @@
                                     </label>
                                 </td>
                                 <td>{{ record.0 }}</td>
-                                <td>{{ record.1 }}</td>
-                                <td>{{ record.2 }}</td>
+                                <td>
+                                    <div class="overflowtitle">
+                                        <a href="{% url 'details' record.0 %}">
+                                            {{ record.1 }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="overflowdate">{{ record.2 }}</div>
+                                </td>
                                 <td>{{ record.3 }}</td>
                             </tr>
                             {% endfor %}
                         </table>
+                        {% else %}
+                        <div class="none">There is no unpaid fines. You're good to go!</div>
+                        {% endif %}
                     </div>
                     {% if outstandings %}
                     <div class="center">
@@ -116,7 +136,9 @@
             <div class="scroll_reserved">
                 <table>
                     <tr>
-                        <th>Book ID</th>
+                        <th>
+                            <div class="overflowbookid">Book ID</div>
+                        </th>
                         <th>Book Title</th>
                         <th>Reservation Due Date</th>
                         <th>Expected Available Date</th>
@@ -125,7 +147,11 @@
                     {% for reserve in reserves %}
                     <tr>
                         <td>{{ reserve.0 }}</td>
-                        <td>{{ reserve.1 }}</td>
+                        <td>
+                            <a style="text-decoration-color: #13366d;" href="{% url 'details' reserve.0 %}">
+                                {{ reserve.1 }}
+                            </a>
+                        </td>
                         <td>
                             {% if reserve.2 == None %}--
                             {% else %}{{ reserve.2 }}
@@ -133,14 +159,14 @@
                         </td>
                         <td>
                             {% if reserve.3 == None %}
-                            <a href="{% url 'borrow' reserve.0 %}">
+                            <a style="text-decoration-color: #13366d;" href="{% url 'borrow' reserve.0 %}">
                                 <div class="pay">Borrow</div>
                             </a>
                             {% else %}{{ reserve.3 }}
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'cancel' reserve.0 %}">
+                            <a style="text-decoration-color: #13366d;" href="{% url 'cancel' reserve.0 %}">
                                 <div class="pay">Cancel</div>
                             </a>
                         </td>

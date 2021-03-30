@@ -37,14 +37,12 @@ def checkUnpaidFines(userid):
                 f"on r.bookID = b.bookID where b.userid IS NOT NULL and r.userid = '{userid}'"
             c.execute(q)
             results = c.fetchall()
-            print(results)
             if results and len(results) == 1:
                 q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID = {results[0][0]}"
             elif len(results) > 1:
                 bookids = []
                 for id in results:
                     bookids += [id[0]]
-                print(tuple(bookids))
                 q = f"UPDATE BOOK SET AVAILABILITY = 'BORROWED' WHERE BOOKID IN {tuple(bookids)}"
             c.execute(q)
             # get the bookIDs to change to available
@@ -52,14 +50,12 @@ def checkUnpaidFines(userid):
                 f"on r.bookID = b.bookID where b.userid IS NULL and r.userid = '{userid}'"
             c.execute(q)
             results = c.fetchall()
-            print(results)
             if results and len(results) == 1:
                 q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID = {results[0][0]}"
             elif len(results) > 1:
                 bookids = []
                 for id in results:
                     bookids += [id[0]]
-                print(tuple(bookids))
                 q = f"UPDATE BOOK SET AVAILABILITY = 'AVAILABLE' WHERE BOOKID IN {tuple(bookids)}"
             c.execute(q)
             # delete all reservations
