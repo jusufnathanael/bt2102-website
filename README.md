@@ -2,7 +2,7 @@
 
 To run this project:
 
-1. Make sure you have Python, Django, and MySQL installed in your local computer.
+1. Install Python, Django, MySQL, and MongoDB to your local computer.
 2. Clone this repository.
 3. Set up MySQL database and run the `tables.sql` file inside the sql folder to initialise the tables.
 4. Create a MongoDB database called `books` and load the `libboks.json` file.
