@@ -1,4 +1,8 @@
-# bt2102-website
+# Integrated Library System
+
+
+
+### Setup Instructions
 
 To run this project:
 
